@@ -1,0 +1,46 @@
+services:
+  reports_db:
+    image: postgres:16
+    container_name: unitrack-reports-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reports_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - reports_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  s6-reports:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: s6-reports
+    ports:
+      - "8006:8006"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
+      DEBUG: "False"
+      ALLOWED_HOSTS: "*"
+      USE_POSTGRES: "True"
+      DB_NAME: ${POSTGRES_DB:-reports_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_HOST: reports_db
+      DB_PORT: "5432"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8006
+             --workers 3 --timeout 120
+             --access-logfile - --error-logfile -"
+    depends_on:
+      reports_db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  reports_db_data:
