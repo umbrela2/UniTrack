@@ -37,6 +37,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
 
     must_change_password = models.BooleanField(default=False)
+    failed_login_attempts = models.PositiveSmallIntegerField(default=0)
+
+    locked_until = models.DateTimeField(null=True, blank=True)
+
+    
 
     date_joined = models.DateTimeField(default=timezone.now)
 
@@ -48,4 +53,5 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.role})"
+
 
