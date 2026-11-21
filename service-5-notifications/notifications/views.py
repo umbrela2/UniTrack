@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import NotificationHistory, NotificationPreference
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({"status": "UP", "service": "service-5-notifications"}, status=200)
 
 
 def home_dashboard(request):

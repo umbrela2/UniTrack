@@ -89,3 +89,17 @@ MAILERS = {
 }
 
 DEFAULT_FROM_EMAIL = 'noreply@unitrack-boumerdes.dz'
+
+from datetime import timedelta
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    # À synchroniser avec la clé secrète du Service Auth de votre groupe
+    'SIGNING_KEY': 'unitrack-shared-jwt-secret-key-2026',
+    'ALGORITHM': 'HS256',
+}

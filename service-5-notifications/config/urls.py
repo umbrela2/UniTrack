@@ -16,3 +16,6 @@ urlpatterns = [
     path('api/notifications/preferences/', update_preferences),
     path('api/notifications/read/<int:notif_id>/', mark_as_read),
 ]
+from notifications.views import health_check
+# Ajoutez dans urlpatterns :
+path('health/', health_check),
