@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     "corsheaders",
     # Local apps
     "users",
-    # "core",      # décommenter quand le dossier core/ est créé (avec __init__.py)
+    "core",      # décommenter quand le dossier core/ est créé (avec __init__.py)
     # "imports",   # décommenter quand l'app imports est créée
 ]
 
@@ -97,8 +97,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # ---------------------------------------------------------------- DRF
 REST_FRAMEWORK = {
     # TODO étape 4 : décommenter quand core/jwt_verification.py existe
-    # "DEFAULT_AUTHENTICATION_CLASSES": ["core.jwt_verification.JWTAuthentication"],
-    # "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["core.jwt_verification.JWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
