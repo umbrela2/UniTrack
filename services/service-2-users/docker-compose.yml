@@ -1,0 +1,25 @@
+# DEV uniquement : RabbitMQ + Consul pour le service S2.
+# Lancer :  docker compose up -d      Arrêter :  docker compose down
+# RabbitMQ UI : http://localhost:15672 (guest / guest)
+# Consul UI   : http://localhost:8500
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: unitrack-rabbitmq
+    ports:
+      - "5672:5672"     # AMQP (utilisé par Django)
+      - "15672:15672"   # interface web
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  consul:
+    image: hashicorp/consul:1.20
+    container_name: unitrack-consul
+    command: agent -dev -client=0.0.0.0 -ui
+    ports:
+      - "8500:8500"     # API HTTP + interface web
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:

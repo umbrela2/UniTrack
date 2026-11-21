@@ -2,6 +2,9 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from core.messaging.events import UserEvents
+from core.messaging.publisher import publish_user_event
+
 from .models import Role, StudentProfile, TeacherProfile, User
 
 
@@ -25,7 +28,6 @@ USER_FIELDS = [
 
 
 class UserSerializer(serializers.ModelSerializer):
-    
     student_profile = StudentProfileSerializer(required=False, allow_null=True)
     teacher_profile = TeacherProfileSerializer(required=False, allow_null=True)
 
@@ -46,9 +48,11 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
+        # null == "absent" (la réponse d'un GET peut être renvoyée telle quelle en PUT)
         for key in ("student_profile", "teacher_profile"):
             if attrs.get(key) is None:
                 attrs.pop(key, None)
+
         if self.instance is None:
             role = attrs.get("role")
         else:
@@ -80,7 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
             StudentProfile.objects.create(user=user, **student_data)
         if teacher_data is not None:
             TeacherProfile.objects.create(user=user, **teacher_data)
-        # TODO étape 6 : publier l'événement user.created (RabbitMQ)
+        publish_user_event(UserEvents.CREATED, user)
         return user
 
     @transaction.atomic
@@ -94,8 +98,9 @@ class UserSerializer(serializers.ModelSerializer):
             StudentProfile.objects.update_or_create(user=instance, defaults=student_data)
         if teacher_data is not None:
             TeacherProfile.objects.update_or_create(user=instance, defaults=teacher_data)
-        # TODO étape 6 : publier l'événement user.updated
-        return User.objects.select_related("student_profile", "teacher_profile").get(pk=instance.pk)
+        fresh = User.objects.select_related("student_profile", "teacher_profile").get(pk=instance.pk)
+        publish_user_event(UserEvents.UPDATED, fresh)
+        return fresh
 
 
 class MeSerializer(serializers.ModelSerializer):
@@ -111,3 +116,4 @@ class MeSerializer(serializers.ModelSerializer):
             f for f in USER_FIELDS
             if f not in ("language", "phone", "student_profile", "teacher_profile")
         ]
+

@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from rest_framework import mixins, viewsets
@@ -9,6 +6,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.messaging.events import UserEvents
+from core.messaging.publisher import publish_user_event
 from core.permissions import IsAdmin, IsAdminOrSupervisorReadOnly
 
 from .models import Role, User
@@ -44,18 +43,21 @@ class UserViewSet(viewsets.ModelViewSet):
         return base_queryset(self.request)
 
     def perform_destroy(self, instance):
-        instance.soft_delete()  # TODO étape 6 : publier user.deactivated
+        instance.soft_delete()
+        publish_user_event(UserEvents.DELETED, instance)
 
     @action(detail=True, methods=["patch"], permission_classes=[IsAdmin])
     def activate(self, request, pk=None):
         user = self.get_object()
         user.activate()
+        publish_user_event(UserEvents.ACTIVATED, user)
         return Response(self.get_serializer(user).data)
 
     @action(detail=True, methods=["patch"], permission_classes=[IsAdmin])
     def deactivate(self, request, pk=None):
         user = self.get_object()
-        user.deactivate()  # TODO étape 6 : publier user.deactivated
+        user.deactivate()
+        publish_user_event(UserEvents.DEACTIVATED, user)
         return Response(self.get_serializer(user).data)
 
     @action(detail=False, methods=["get", "patch"], permission_classes=[IsAuthenticated])
@@ -68,12 +70,15 @@ class UserViewSet(viewsets.ModelViewSet):
             raise NotFound("Profil introuvable.")
         if request.method == "GET":
             return Response(MeSerializer(user).data)
-        forbidden = set(request.data) - {"language", "phone"}          
-        if forbidden:                                                   
-            raise ValidationError({f: "Champ non modifiable." for f in forbidden})  
+
+        forbidden = set(request.data) - {"language", "phone"}
+        if forbidden:
+            raise ValidationError({f: "Champ non modifiable." for f in forbidden})
+
         serializer = MeSerializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        publish_user_event(UserEvents.UPDATED, user)  # la langue sert à S5 (emails)
         return Response(serializer.data)
 
 
