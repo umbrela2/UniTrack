@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     # Local apps
     "users",
     "core",      # décommenter quand le dossier core/ est créé (avec __init__.py)
-    # "imports",   # décommenter quand l'app imports est créée
+    "imports",   # décommenter quand l'app imports est créée
 ]
 
 MIDDLEWARE = [
@@ -93,6 +93,8 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # ---------------------------------------------------------------- Static
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # ---------------------------------------------------------------- DRF
 REST_FRAMEWORK = {
@@ -109,6 +111,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Gestion des profils : étudiants, enseignants, admin, superviseur.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,   
 }
 
 # ---------------------------------------------------------------- CORS
