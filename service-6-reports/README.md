@@ -1,9 +1,11 @@
 # Service 6 — Statistiques & Rapports (UniTrack)
 
 Microservice Django 5 / Django REST Framework du projet **UniTrack** pour
-l'Université M'hamed Bougara – Boumerdès. Il expose les statistiques
-d'assiduité, les rapports exportables, l'interface de tableau de bord et un
-endpoint de synchronisation avec les autres services.
+l'Université M'hamed Bougara – Boumerdès. Service **headless** (sans interface
+HTML) : il expose uniquement une API REST JSON pour les statistiques
+d'assiduité, les rapports exportables (Excel/PDF) et un endpoint de
+synchronisation avec les autres services. Le frontend React est développé et
+hébergé séparément.
 
 | Élément | Valeur |
 | --- | --- |
@@ -15,7 +17,7 @@ endpoint de synchronisation avec les autres services.
 
 ## Fonctionnalités
 
-- Tableau de bord interactif (Bootstrap 5 + Chart.js) avec filtres et exports.
+- API REST JSON consommable par le frontend React (CORS ouvert).
 - KPI d'assiduité, répartition des présences, taux par module et par groupe.
 - Détection des étudiants en alerte / exclusion selon des seuils paramétrables.
 - Liste des séances non assurées.
@@ -55,7 +57,6 @@ directement l'interpréteur :
 
 Accès :
 
-- Tableau de bord : <http://127.0.0.1:8006/api/reports/dashboard/>
 - Santé du service : <http://127.0.0.1:8006/api/reports/health/>
 - Documentation API : <http://127.0.0.1:8006/api/docs/>
 - Schéma OpenAPI : <http://127.0.0.1:8006/api/schema/>
@@ -88,7 +89,7 @@ docker compose up --build -d
 docker compose exec s6-reports python manage.py seed_mock_data
 ```
 
-Accès : <http://localhost:8006/api/reports/dashboard/>
+Accès : <http://localhost:8006/api/reports/health/>
 
 Commandes utiles :
 
@@ -133,12 +134,16 @@ exclusion ≥ 5) et modifiables depuis l'administration Django.
 
 ## API REST
 
-Toutes les routes sont préfixées par `/api/reports/`.
+Service purement headless : toutes les réponses métier sont en JSON (ou
+Excel/PDF pour les exports), sans aucun rendu HTML. Toutes les routes sont
+préfixées par `/api/reports/`.
+
+`CORS_ALLOW_ALL_ORIGINS = True` est activé dans `config/settings.py` afin que
+le frontend React séparé puisse appeler l'API sans blocage CORS.
 
 | Méthode | Chemin | Description |
 | --- | --- | --- |
 | `GET` | `/health/` | État du service (`service`, `status`, `port`) |
-| `GET` | `/dashboard/` | Interface HTML du tableau de bord |
 | `GET` | `/dashboard/summary/` | KPI, statistiques par module/groupe, étudiants à risque, répartition des présences |
 | `GET` | `/non-assured-sessions/` | Liste des séances au statut « Non assurée » |
 | `GET` | `/student/<matricule>/` | Statistiques d'assiduité d'un étudiant |
@@ -250,9 +255,9 @@ La commande est idempotente et crée 5 groupes, 8 modules, 6 salles,
 python manage.py test
 ```
 
-Les tests couvrent les endpoints santé, tableau de bord, filtres et rôles,
-seuils, séances non assurées, statistiques étudiant, synchronisation et
-exports Excel/PDF.
+Les tests couvrent les endpoints santé, les agrégations du tableau de bord
+(API JSON), les filtres et rôles, les seuils, les séances non assurées, les
+statistiques étudiant, la synchronisation et les exports Excel/PDF.
 
 ## Structure
 
@@ -262,7 +267,6 @@ service-6-reports/
 ├── reports/
 │   ├── management/commands/seed_mock_data.py
 │   ├── migrations/
-│   ├── templates/reports/dashboard.html
 │   ├── admin.py
 │   ├── exporters.py        # Génération Excel et PDF
 │   ├── models.py

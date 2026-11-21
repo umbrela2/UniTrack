@@ -1,14 +1,13 @@
 from django.db.models import Count, F, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.views.generic import TemplateView
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .exporters import build_excel_report, build_pdf_report
-from .models import Etudiant, Groupe, Module, Presence, Seance
+from .models import Etudiant, Groupe, Presence, Seance
 from .sync import process_sync_payload
 from .utils import (
     ABSENT,
@@ -264,16 +263,6 @@ class DashboardSummaryView(APIView):
                 'exclusion': seuil_exclusion,
             },
         })
-
-
-class DashboardPageView(TemplateView):
-    template_name = 'reports/dashboard.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['groupes'] = Groupe.objects.all()
-        context['modules'] = Module.objects.all()
-        return context
 
 
 class NonAssuredSessionsView(APIView):

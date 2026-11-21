@@ -482,27 +482,6 @@ class DashboardSummaryTests(ReportAPITestData):
         self.assertEqual(response.status_code, 400)
 
 
-class DashboardPageTests(ReportAPITestData):
-    def test_dashboard_page_renders_super_admin_layout(self):
-        response = self.client.get(reverse('dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'reports/dashboard.html')
-        self.assertContains(response, 'Supervision Multi-Départements')
-        self.assertContains(response, 'Doyen de la Faculté des Sciences')
-        self.assertContains(response, '4. Super Admin (Faculté)')
-        self.assertContains(response, 'Rapport Officiel PDF (FP12)')
-        self.assertContains(response, 'Export Global Excel (FP12)')
-        self.assertContains(response, 'Rechercher étudiant / matricule...')
-        self.assertContains(response, 'Dr. YAHIATENE')
-        self.assertContains(response, 'id="groupCards"')
-        self.assertContains(response, 'id="studentBody"')
-        self.assertContains(response, 'id="teacherBody"')
-        self.assertContains(response, 'id="progressChart"')
-        self.assertContains(response, 'id="exportPdf"')
-        self.assertContains(response, 'id="exportExcel"')
-
-
 class NonAssuredSessionsTests(ReportAPITestData):
 
     def test_non_assured_sessions_list_and_fields(self):
