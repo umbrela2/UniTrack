@@ -28,9 +28,13 @@ doivent être **idempotents** (ignorer un `event_id` déjà traité).
 |---|---|---|
 | `user.created` | POST /api/users/ ou import CSV/Excel | S1 (crée les identifiants + mot de passe temporaire), S5 (e-mail de bienvenue), S6 |
 | `user.updated` | PUT/PATCH profil, PATCH /me/ | S4 (changement de groupe), S5 (langue), S6 |
-| `user.activated` | PATCH /{id}/activate/ | S1 (réactive la connexion) |
+| `user.activated` | PATCH /{id}/activate/ ou POST /{id}/restore/ | S1 (réactive la connexion) |
 | `user.deactivated` | PATCH /{id}/deactivate/ | S1 (bloque la connexion), S4 |
 | `user.deleted` | DELETE /{id}/ (soft delete) | S1 (supprime/bloque les identifiants), S4, S6 |
+
+**Remarque suppression** : `user.deleted` correspond à une suppression *logique* (le compte
+reste en base dans S2, même `user_id`). S1 doit donc **bloquer** la connexion sans effacer
+définitivement les identifiants : un compte restauré renvoie `user.activated`.
 
 ## Payload `data` (identique pour les 5 événements)
 ```json
@@ -51,10 +55,19 @@ doivent être **idempotents** (ignorer un `event_id` déjà traité).
 - Données minimales (loi 18-07) : pas de téléphone, pas de date de naissance.
 - `user_id` est l'identifiant partagé avec S1 : c'est le claim `sub` du JWT.
 
-## Événements consommés par S2 (à venir)
+## Événements consommés par S2
+Queue : `users.group_events` (durable), liée à l'exchange `unitrack.events`.
+Process séparé : `python manage.py consume_events`.
+
 | Routing key | Émetteur | Action dans S2 |
 |---|---|---|
-| `group.deleted` | S3 | mettre `group_id` à NULL pour les étudiants du groupe |
+| `group.deleted` | S3 | `group_id` mis à NULL pour les étudiants du groupe, puis `user.updated` publié pour chacun |
+
+Format attendu de `group.deleted` (à confirmer avec S3) :
+```json
+{ "event_id": "uuid", "event_type": "group.deleted", "data": { "group_id": "uuid" } }
+```
+Traitement idempotent. En cas d'erreur : un nouvel essai, puis le message est écarté (journalisé).
 
 ## Limite connue
 La publication se fait après le commit de la base. Si RabbitMQ est indisponible, l'utilisateur
