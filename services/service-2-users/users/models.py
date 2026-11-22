@@ -81,6 +81,11 @@ class User(models.Model):
         self.status = Status.DISABLED
         self.save(update_fields=["status", "updated_at"])
 
+    def restore(self):
+        self.deleted_at = None
+        self.status = Status.ACTIVE
+        self.save(update_fields=["deleted_at", "status", "updated_at"])
+
     def soft_delete(self):
         self.deleted_at = timezone.now()
         self.status = Status.DISABLED

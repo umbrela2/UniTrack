@@ -1,6 +1,5 @@
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
 from core.messaging.events import UserEvents
 from core.messaging.publisher import publish_user_event
@@ -35,17 +34,24 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = USER_FIELDS
         read_only_fields = ["id", "status", "created_at", "updated_at"]
-        extra_kwargs = {
-            # all_objects : un email d'un compte supprimé (soft delete) reste réservé
-            "email": {
-                "validators": [
-                    UniqueValidator(
-                        queryset=User.all_objects.all(),
-                        message="Un utilisateur avec cet email existe déjà.",
-                    )
-                ]
-            }
-        }
+        # l'unicité de l'email est gérée dans validate_email (compte supprimé inclus)
+        extra_kwargs = {"email": {"validators": []}}
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        qs = User.all_objects.filter(email__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        existing = qs.first()
+        if existing is not None:
+            if existing.deleted_at is not None:
+                raise serializers.ValidationError(
+                    "Cet email appartient à un compte supprimé "
+                    f"(id: {existing.id}). Restaurez-le avec "
+                    "POST /api/users/{id}/restore/ au lieu de le recréer."
+                )
+            raise serializers.ValidationError("Un utilisateur avec cet email existe déjà.")
+        return value
 
     def validate(self, attrs):
         # null == "absent" (la réponse d'un GET peut être renvoyée telle quelle en PUT)

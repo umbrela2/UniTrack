@@ -14,9 +14,13 @@ from .models import Role, User
 from .serializers import MeSerializer, UserSerializer
 
 
-def base_queryset(request):
-    """Filtres : ?role=  ?status=  ?q= (email, nom, prénom, matricule)"""
-    qs = User.objects.select_related("student_profile", "teacher_profile")
+def base_queryset(request, deleted=False):
+    """Filtres : ?role=  ?status=  ?q= (email, nom, prénom, matricule)
+    deleted=True : uniquement les comptes supprimés (soft delete)."""
+    manager = User.all_objects if deleted else User.objects
+    qs = manager.select_related("student_profile", "teacher_profile")
+    if deleted:
+        qs = qs.filter(deleted_at__isnull=False)
     params = request.query_params
     if params.get("role"):
         qs = qs.filter(role=params["role"])
@@ -40,7 +44,11 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorReadOnly]
 
     def get_queryset(self):
-        return base_queryset(self.request)
+        # comptes supprimés : visibles seulement via ?deleted=true (liste) et pour restore
+        wants_deleted = self.action == "restore" or (
+            self.action == "list" and self.request.query_params.get("deleted") == "true"
+        )
+        return base_queryset(self.request, deleted=wants_deleted)
 
     def perform_destroy(self, instance):
         instance.soft_delete()
@@ -58,6 +66,14 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.deactivate()
         publish_user_event(UserEvents.DEACTIVATED, user)
+        return Response(self.get_serializer(user).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAdmin])
+    def restore(self, request, pk=None):
+        """Restaure un compte supprimé (même id, même historique)."""
+        user = self.get_object()
+        user.restore()
+        publish_user_event(UserEvents.ACTIVATED, user)  # S1 réactive la connexion
         return Response(self.get_serializer(user).data)
 
     @action(detail=False, methods=["get", "patch"], permission_classes=[IsAuthenticated])
