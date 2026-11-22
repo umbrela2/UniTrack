@@ -29,13 +29,27 @@ def _put(url, payload=None):
         return response.status
 
 
+def traefik_tags():
+    """Tags lus par Traefik (provider Consul Catalog) : routage dynamique."""
+    name = settings.SERVICE_NAME
+    rule = (
+        "PathPrefix(`/api/users`) || PathPrefix(`/api/students`) "
+        "|| PathPrefix(`/api/teachers`)"
+    )
+    return [
+        "traefik.enable=true",
+        f"traefik.http.routers.{name}.rule={rule}",
+        f"traefik.http.routers.{name}.entrypoints=web",
+    ]
+
+
 def register():
     payload = {
         "ID": service_id(),
         "Name": settings.SERVICE_NAME,
         "Address": settings.SERVICE_HOST,
         "Port": settings.SERVICE_PORT,
-        "Tags": ["unitrack", "users", "django"],
+        "Tags": ["unitrack", "users", "django"] + traefik_tags(),
         "Check": {
             "Name": "S2 health",
             "HTTP": f"http://{settings.SERVICE_HOST}:{settings.SERVICE_PORT}/health/",
