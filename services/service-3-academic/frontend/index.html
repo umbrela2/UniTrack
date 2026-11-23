@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UniTrack — Emploi du temps</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary mb-3">
+  <div class="container-fluid">
+    <span class="navbar-brand mb-0 h1">UniTrack <small class="fw-normal">· Emploi du temps</small></span>
+    <div class="d-flex align-items-center gap-2">
+      <span id="whoami" class="badge bg-light text-dark">Non connecté</span>
+      <button class="btn btn-outline-light btn-sm" id="btnLogin">Connexion</button>
+      <button class="btn btn-outline-light btn-sm d-none" id="btnLogout">Déconnexion</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid pb-5">
+  <div id="globalAlert"></div>
+
+  <ul class="nav nav-tabs mb-3" id="tabs">
+    <li class="nav-item" data-roles="admin,teacher">
+      <button class="nav-link" data-pane="paneCal">Emploi du temps</button>
+    </li>
+    <li class="nav-item" data-roles="admin,supervisor">
+      <button class="nav-link" data-pane="paneNA">Séances non assurées</button>
+    </li>
+  </ul>
+
+  <div id="noAccess" class="alert alert-warning d-none">
+    Cette interface est réservée aux enseignants et aux administrateurs.
+    Les étudiants consultent leur emploi du temps depuis le portail étudiant.
+  </div>
+
+  <!-- ===================== Calendrier ===================== -->
+  <section id="paneCal" class="pane d-none">
+    <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
+      <div class="btn-group">
+        <button class="btn btn-outline-secondary" id="prevWeek" title="Semaine précédente">&laquo;</button>
+        <button class="btn btn-outline-secondary" id="todayWeek">Aujourd'hui</button>
+        <button class="btn btn-outline-secondary" id="nextWeek" title="Semaine suivante">&raquo;</button>
+      </div>
+      <strong id="weekLabel" class="mx-2"></strong>
+
+      <div id="viewEnsBox" class="d-none">
+        <label class="form-label mb-0 small" for="viewEns">Enseignant (ID)</label>
+        <input type="number" id="viewEns" class="form-control form-control-sm"
+               style="width:120px" min="1" placeholder="ex. 10">
+      </div>
+
+      <div>
+        <label class="form-label mb-0 small" for="viewGroupe">Filtrer par groupe</label>
+        <select id="viewGroupe" class="form-select form-select-sm" style="width:230px">
+          <option value="">— mon planning —</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary ms-auto" id="btnNew">+ Nouvelle séance</button>
+    </div>
+
+    <div class="legend small text-muted mb-2">
+      <span style="background:#0d6efd"></span>Cours
+      <span style="background:#198754"></span>TD
+      <span style="background:#e8590c"></span>TP
+      <span style="background:#dc3545"></span>Non assurée
+      · Cliquez sur une case vide pour ajouter une séance, sur une séance pour la consulter ou la modifier.
+    </div>
+
+    <div class="cal-wrap"><div id="cal" class="cal"></div></div>
+  </section>
+
+  <!-- ===================== Séances non assurées ===================== -->
+  <section id="paneNA" class="pane d-none">
+    <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
+      <div><label class="form-label mb-0 small" for="naFrom">Du</label>
+        <input type="date" id="naFrom" class="form-control form-control-sm"></div>
+      <div><label class="form-label mb-0 small" for="naTo">Au</label>
+        <input type="date" id="naTo" class="form-control form-control-sm"></div>
+      <div><label class="form-label mb-0 small" for="naGroupe">Groupe</label>
+        <select id="naGroupe" class="form-select form-select-sm"><option value="">Tous</option></select></div>
+      <div><label class="form-label mb-0 small" for="naModule">Module</label>
+        <select id="naModule" class="form-select form-select-sm"><option value="">Tous</option></select></div>
+      <div><label class="form-label mb-0 small" for="naEns">ID enseignant</label>
+        <input type="number" id="naEns" class="form-control form-control-sm" style="width:120px"></div>
+      <button class="btn btn-primary btn-sm" id="naSearch">Filtrer</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped bg-white" id="naTable"></table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+      <small id="naCount" class="text-muted"></small>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-secondary" id="naPrev">&laquo;</button>
+        <button class="btn btn-outline-secondary" id="naNext">&raquo;</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== Connexion ===================== -->
+<div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Connexion (mode développement)</h5></div>
+    <div class="modal-body">
+      <p class="small text-muted">
+        Le Service 1 (Auth) fournira le vrai JWT. En attendant, choisissez un rôle et un ID
+        (le serveur doit avoir <code>AUTH_DEV_MODE=True</code>), ou collez un token JWT.
+        L'enseignant est identifié automatiquement à partir de ce compte.
+      </p>
+      <div class="row g-2 mb-2">
+        <div class="col-7"><label class="form-label" for="lgRole">Rôle</label>
+          <select id="lgRole" class="form-select">
+            <option value="enseignant">Enseignant</option>
+            <option value="admin">Administrateur</option>
+            <option value="superviseur">Superviseur</option>
+            <option value="etudiant">Étudiant</option>
+          </select></div>
+        <div class="col-5"><label class="form-label" for="lgId">ID utilisateur</label>
+          <input id="lgId" type="number" min="1" value="10" class="form-control"></div>
+      </div>
+      <label class="form-label" for="lgToken">Token JWT (optionnel)</label>
+      <textarea id="lgToken" class="form-control" rows="3" placeholder="eyJhbGciOi..."></textarea>
+      <div id="lgAlert" class="mt-2"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="lgOk">Se connecter</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ===================== Séance ===================== -->
+<div class="modal fade" id="seanceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="seanceTitle">Séance</h5>
+      <button class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="s_id">
+      <div id="s_meta" class="small text-muted mb-2"></div>
+
+      <h6 class="fw-bold">Informations de la séance</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <label class="form-label" for="s_date">Date séance</label>
+          <input type="date" id="s_date" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="s_debut">Heure début</label>
+          <input type="time" id="s_debut" class="form-control" step="900" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="s_fin">Heure fin</label>
+          <input type="time" id="s_fin" class="form-control" step="900" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="s_type">Type séance</label>
+          <select id="s_type" class="form-select">
+            <option value="COURS">Cours</option>
+            <option value="TD" selected>TD</option>
+            <option value="TP">TP</option>
+          </select>
+        </div>
+      </div>
+
+      <h6 class="fw-bold">Rattachement académique</h6>
+      <p class="small text-muted mb-2">
+        Ces informations sont créées automatiquement si elles n'existent pas encore,
+        puis réutilisées pour les séances suivantes (aucun doublon).
+      </p>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label" for="s_departement">Département</label>
+          <input id="s_departement" class="form-control" list="dlDepartements"
+                 placeholder="ex. Informatique" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="s_annee">Année d'étude</label>
+          <input id="s_annee" class="form-control" list="dlAnnees"
+                 placeholder="L3, M1, ING3…" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="s_specialite">Spécialité</label>
+          <input id="s_specialite" class="form-control" list="dlSpecialites"
+                 placeholder="SI, GL, I2A…" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="s_groupe_numero">Groupe</label>
+          <input id="s_groupe_numero" class="form-control" list="dlGroupes"
+                 placeholder="Groupe 1" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label" for="s_module_intitule">Module</label>
+          <input id="s_module_intitule" class="form-control" list="dlModules"
+                 placeholder="ex. Algorithmique" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="s_semestre">Semestre</label>
+          <input id="s_semestre" class="form-control" list="dlSemestres"
+                 placeholder="S1, Semestre 3…" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label" for="s_salle_nom">Salle / Amphithéâtre</label>
+          <input id="s_salle_nom" class="form-control" list="dlSalles"
+                 placeholder="ex. Salle 101, Amphi A" required>
+        </div>
+      </div>
+
+      <div id="s_ensBox" class="row g-2 mb-2 d-none">
+        <div class="col-md-4">
+          <label class="form-label" for="s_ens">ID enseignant</label>
+          <input type="number" id="s_ens" class="form-control" min="1"
+                 placeholder="Obligatoire pour un administrateur">
+        </div>
+        <div class="col-md-8 d-flex align-items-end">
+          <small class="text-muted">
+            L'administrateur doit choisir explicitement l'enseignant : aucune
+            séance ne lui est attribuée automatiquement.
+          </small>
+        </div>
+      </div>
+      <div id="s_ensInfo" class="alert alert-light border py-2 d-none"></div>
+
+      <div id="s_alert" class="mt-3"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline-danger me-auto d-none" id="s_delete">Supprimer</button>
+      <button class="btn btn-outline-secondary" id="s_check">Vérifier les conflits</button>
+      <button class="btn btn-primary" id="s_save">Enregistrer</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Suggestions alimentées par /api/structure/options/ -->
+<datalist id="dlDepartements"></datalist>
+<datalist id="dlAnnees"></datalist>
+<datalist id="dlSpecialites"></datalist>
+<datalist id="dlGroupes"></datalist>
+<datalist id="dlModules"></datalist>
+<datalist id="dlSemestres"></datalist>
+<datalist id="dlSalles"></datalist>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
