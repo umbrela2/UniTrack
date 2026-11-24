@@ -1,13 +1,13 @@
 services:
-  reports_db:
+  statistics_db:
     image: postgres:16
-    container_name: unitrack-reports-db
+    container_name: unitrack-statistics-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-reports_db}
+      POSTGRES_DB: ${POSTGRES_DB:-statistics_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - reports_db_data:/var/lib/postgresql/data
+      - statistics_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -26,21 +26,40 @@ services:
       SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
       DEBUG: "False"
       ALLOWED_HOSTS: "*"
+      USE_SQLITE: "False"
       USE_POSTGRES: "True"
-      DB_NAME: ${POSTGRES_DB:-reports_db}
+      DB_NAME: ${POSTGRES_DB:-statistics_db}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DB_HOST: reports_db
+      DB_HOST: statistics_db
       DB_PORT: "5432"
+      CONSUL_HOST: ${CONSUL_HOST:-consul}
+      CONSUL_PORT: ${CONSUL_PORT:-8500}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-change-me-to-match-s1-auth}
+      REQUIRE_AUTH: ${REQUIRE_AUTH:-False}
     command: >
       sh -c "python manage.py migrate --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8006
              --workers 3 --timeout 120
              --access-logfile - --error-logfile -"
     depends_on:
-      reports_db:
+      statistics_db:
         condition: service_healthy
+    networks:
+      - default
+      - unitrack_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.s6-reports.rule=PathPrefix(`/api/reports`)"
+      - "traefik.http.routers.s6-reports.entrypoints=web"
+      - "traefik.http.services.s6-reports.loadbalancer.server.port=8006"
+      - "traefik.docker.network=unitrack_net"
     restart: unless-stopped
 
 volumes:
-  reports_db_data:
+  statistics_db_data:
+
+networks:
+  unitrack_net:
+    external: true

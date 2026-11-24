@@ -8,3 +8,5 @@ psycopg[binary]
 python-dotenv
 requests
 django-cors-headers
+djangorestframework-simplejwt
+pika
