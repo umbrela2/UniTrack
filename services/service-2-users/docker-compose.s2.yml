@@ -1,0 +1,58 @@
+# SERVICE S2 (serveur/VM dédié) : base users_db + API + consumer
+#   docker compose -f docker-compose.s2.yml --env-file .env.docker up -d --build
+services:
+  users-db:
+    image: postgres:16
+    container_name: s2-users-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - users_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"       # optionnel : pgAdmin depuis ton PC
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    image: unitrack/user-service:latest
+    container_name: s2-api
+    env_file: .env.docker
+    environment:
+      DB_HOST: users-db
+      DB_PORT: "5432"
+      RUN_MIGRATIONS: "True"
+      CONSUL_REGISTER: "True"
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./keys/auth_public.pem:/app/keys/auth_public.pem:ro
+      - media_data:/app/media
+    depends_on:
+      users-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  consumer:
+    image: unitrack/user-service:latest
+    container_name: s2-consumer
+    command: python manage.py consume_events
+    env_file: .env.docker
+    environment:
+      DB_HOST: users-db
+      DB_PORT: "5432"
+      RUN_MIGRATIONS: "False"
+      CONSUL_REGISTER: "False"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  users_db_data:
+  media_data:
