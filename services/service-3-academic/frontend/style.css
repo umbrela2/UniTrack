@@ -1,0 +1,32 @@
+
+:root { --px-h: 60px; }
+body { background: #f6f7fb; }
+.cal-wrap { overflow-x: auto; background: #fff; border: 1px solid #dee2e6; border-radius: .5rem; }
+.cal { display: grid; grid-template-columns: 56px repeat(7, minmax(120px, 1fr)); min-width: 940px; }
+.cal-head { position: sticky; top: 0; background: #f8f9fa; border-bottom: 1px solid #dee2e6;
+  padding: .4rem .25rem; text-align: center; font-size: .85rem; font-weight: 600; }
+.cal-head small { display: block; font-weight: 400; color: #6c757d; }
+.cal-head.today { background: #e7f1ff; color: #0a58ca; }
+.time-col { position: relative; border-right: 1px solid #dee2e6; }
+.time-col span { position: absolute; right: 6px; font-size: .7rem; color: #6c757d; transform: translateY(-50%); }
+.day-col { position: relative; border-right: 1px solid #eef0f3; cursor: pointer;
+  background-image: linear-gradient(to bottom, transparent calc(var(--px-h) - 1px), #e9ecef 0);
+  background-size: 100% var(--px-h); }
+.day-col:hover { background-color: #fafcff; }
+.day-col.friday { background-color: #fbfbfb; }
+.seance { position: absolute; left: 2px; right: 2px; border-radius: 6px; padding: 2px 6px;
+  font-size: .72rem; line-height: 1.25; overflow: hidden; cursor: pointer; color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2); white-space: normal; z-index: 1; }
+.seance:hover { filter: brightness(1.08); z-index: 3; }
+.seance span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seance b { display: block; font-size: .76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-COURS { background: #0d6efd; } .t-TD { background: #198754; } .t-TP { background: #e8590c; }
+.s-NON_ASSUREE { background: repeating-linear-gradient(45deg,#dc3545,#dc3545 8px,#b02a37 8px,#b02a37 16px); }
+.s-CLOTUREE { opacity: .65; } .s-EN_COURS { outline: 2px solid #ffc107; }
+.legend span { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin: 0 .25rem 0 .75rem; vertical-align: middle; }
+#seanceModal .modal-body h6 { border-bottom: 1px solid #eef0f3; padding-bottom: .35rem; }
+#s_ensInfo { font-size: .875rem; }
+@media (max-width: 576px) {
+  #viewEnsBox input, #viewGroupe { width: 100% !important; }
+}
+
