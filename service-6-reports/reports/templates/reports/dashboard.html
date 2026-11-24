@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="UniTrack V2.0 - Supervision multi-départements et audit académique">
+    <title>UniTrack V2.0 - Super Admin (Faculté)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #111827;
+            --slate: #141B2D;
+            --card-navy: #1E293B;
+            --page-bg: #F3F5F9;
+            --card-border: #E5E7EB;
+            --blue: #2563EB;
+            --blue-soft: #DBEAFE;
+            --cyan: #22D3EE;
+            --gold: #FACC15;
+            --amber: #D97706;
+            --amber-soft: #FEF3C7;
+            --red: #DC2626;
+            --red-soft: #FEE2E2;
+            --green: #10B981;
+            --green-soft: #DCFCE7;
+            --purple: #7C3AED;
+            --purple-soft: #EDE9FE;
+            --muted: #64748B;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--page-bg);
+            color: #0F172A;
+            font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .topbar {
+            background: var(--slate);
+            padding: 14px 22px;
+            box-shadow: 0 2px 16px rgba(15, 23, 42, 0.18);
+        }
+
+        .topbar-inner {
+            align-items: center;
+            display: flex;
+            gap: 22px;
+            margin: 0 auto;
+            max-width: 1600px;
+        }
+
+        .brand {
+            align-items: center;
+            display: flex;
+            flex-shrink: 0;
+            gap: 12px;
+            color: #fff;
+        }
+
+        .brand-icon {
+            align-items: center;
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            border-radius: 12px;
+            box-shadow: 0 5px 16px rgba(37, 99, 235, 0.42);
+            color: #fff;
+            display: flex;
+            font-size: 1.35rem;
+            height: 44px;
+            justify-content: center;
+            width: 44px;
+        }
+
+        .brand-title {
+            display: block;
+            font-size: 1.03rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            line-height: 1.15;
+        }
+
+        .brand-version {
+            color: #93C5FD;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.45px;
+            margin-left: 3px;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+            color: #94A3B8;
+            display: block;
+            font-size: 0.67rem;
+            letter-spacing: 0.18px;
+            margin-top: 3px;
+        }
+
+        .topnav {
+            display: flex;
+            flex: 1;
+            gap: 6px;
+            justify-content: flex-end;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .topnav-pill {
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 999px;
+            color: #CBD5E1;
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 8px 13px;
+            text-decoration: none;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .topnav-pill:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(203, 213, 225, 0.4);
+            color: #fff;
+        }
+
+        .topnav-pill.active {
+            background: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 4px 12px rgba(250, 204, 21, 0.26);
+            color: #1F2937;
+            font-weight: 800;
+        }
+
+        .lang-switch {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 999px;
+            display: flex;
+            flex-shrink: 0;
+            gap: 2px;
+            padding: 3px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 0;
+            border-radius: 999px;
+            color: #94A3B8;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            padding: 5px 9px;
+        }
+
+        .lang-btn.active {
+            background: #fff;
+            color: var(--slate);
+        }
+
+        .page-wrap {
+            flex: 1;
+            margin: 0 auto;
+            max-width: 1600px;
+            padding: 24px 22px 34px;
+            width: 100%;
+        }
+
+        .hero-card {
+            align-items: center;
+            background:
+                radial-gradient(circle at 92% 12%, rgba(37, 99, 235, 0.22), transparent 32%),
+                var(--navy);
+            border-radius: 18px;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+            color: #fff;
+            display: flex;
+            gap: 28px;
+            justify-content: space-between;
+            overflow: hidden;
+            padding: 30px 32px;
+            position: relative;
+        }
+
+        .hero-card::after {
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 50%;
+            bottom: -120px;
+            content: "";
+            height: 280px;
+            position: absolute;
+            right: -40px;
+            width: 280px;
+        }
+
+        .hero-copy {
+            max-width: 850px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-eyebrow {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+
+        .crown-icon {
+            align-items: center;
+            background: rgba(250, 204, 21, 0.14);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            border-radius: 10px;
+            color: var(--gold);
+            display: flex;
+            font-size: 1.02rem;
+            height: 34px;
+            justify-content: center;
+            width: 34px;
+        }
+
+        .gold-badge {
+            background: rgba(250, 204, 21, 0.14);
+            border: 1px solid rgba(250, 204, 21, 0.33);
+            border-radius: 999px;
+            color: #FDE68A;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.45px;
+            padding: 6px 12px;
+            text-transform: uppercase;
+        }
+
+        .hero-dept {
+            color: #94A3B8;
+            font-size: 0.76rem;
+            font-weight: 500;
+            letter-spacing: 0.12px;
+            margin: 0 0 8px;
+        }
+
+        .hero-title {
+            font-size: clamp(1.4rem, 2.5vw, 2.05rem);
+            font-weight: 800;
+            letter-spacing: -0.35px;
+            line-height: 1.15;
+            margin: 0 0 9px;
+        }
+
+        .hero-subtitle {
+            color: #94A3B8;
+            font-size: 0.82rem;
+            line-height: 1.55;
+            margin: 0;
+            max-width: 710px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            gap: 11px;
+            position: relative;
+            min-width: 282px;
+            z-index: 1;
+        }
+
+        .btn-official {
+            align-items: center;
+            border: 0;
+            border-radius: 11px;
+            color: #fff;
+            display: flex;
+            font-size: 0.78rem;
+            font-weight: 800;
+            gap: 10px;
+            justify-content: flex-start;
+            padding: 13px 17px;
+            text-align: left;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+            width: 100%;
+        }
+
+        .btn-official:hover {
+            color: #fff;
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+
+        .btn-official:disabled {
+            cursor: wait;
+            filter: grayscale(0.25);
+            opacity: 0.72;
+        }
+
+        .btn-official i {
+            font-size: 1rem;
+        }
+
+        .btn-pdf {
+            background: #E11D48;
+            box-shadow: 0 7px 16px rgba(225, 29, 72, 0.25);
+        }
+
+        .btn-excel {
+            background: #10B981;
+            box-shadow: 0 7px 16px rgba(16, 185, 129, 0.24);
+        }
+
+        .group-strip {
+            margin-top: 22px;
+        }
+
+        .strip-heading {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 11px;
+        }
+
+        .strip-title {
+            color: #334155;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.75px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .strip-title span {
+            color: #94A3B8;
+            font-weight: 600;
+        }
+
+        .strip-status {
+            color: #94A3B8;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .group-cards {
+            display: flex;
+            gap: 11px;
+            overflow-x: auto;
+            padding: 2px 2px 6px;
+            scrollbar-color: #CBD5E1 transparent;
+            scrollbar-width: thin;
+        }
+
+        .group-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            cursor: pointer;
+            flex: 0 0 215px;
+            min-height: 96px;
+            padding: 13px 15px;
+            text-align: left;
+            transition: all 0.18s ease;
+        }
+
+        .group-card:hover {
+            border-color: #93C5FD;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.11);
+            transform: translateY(-1px);
+        }
+
+        .group-card.active {
+            background: var(--card-navy);
+            border-color: var(--card-navy);
+            box-shadow: 0 9px 22px rgba(30, 41, 59, 0.28);
+            color: #fff;
+        }
+
+        .group-card-label {
+            color: #334155;
+            display: block;
+            font-size: 0.73rem;
+            font-weight: 700;
+            line-height: 1.35;
+            min-height: 2rem;
+        }
+
+        .group-card.active .group-card-label {
+            color: #F8FAFC;
+        }
+
+        .group-card-value {
+            color: var(--blue);
+            display: block;
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            margin-top: 7px;
+        }
+
+        .group-card.active .group-card-value {
+            color: var(--cyan);
+        }
+
+        .group-card-meta {
+            color: #94A3B8;
+            display: block;
+            font-size: 0.63rem;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .group-card.active .group-card-meta {
+            color: #94A3B8;
+        }
+
+        .alert-unitrack {
+            border: 0;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            margin-top: 16px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-top: 22px;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            display: flex;
+            gap: 14px;
+            min-height: 124px;
+            padding: 18px;
+        }
+
+        .kpi-icon {
+            align-items: center;
+            border-radius: 11px;
+            display: flex;
+            flex-shrink: 0;
+            font-size: 1.24rem;
+            height: 44px;
+            justify-content: center;
+            width: 44px;
+        }
+
+        .kpi-blue {
+            background: var(--blue-soft);
+            color: var(--blue);
+        }
+
+        .kpi-amber {
+            background: var(--amber-soft);
+            color: var(--amber);
+        }
+
+        .kpi-red {
+            background: var(--red-soft);
+            color: var(--red);
+        }
+
+        .kpi-purple {
+            background: var(--purple-soft);
+            color: var(--purple);
+        }
+
+        .kpi-content {
+            min-width: 0;
+        }
+
+        .kpi-label {
+            color: #64748B;
+            display: block;
+            font-size: 0.66rem;
+            font-weight: 800;
+            letter-spacing: 0.65px;
+            line-height: 1.3;
+            text-transform: uppercase;
+        }
+
+        .kpi-value {
+            color: #0F172A;
+            display: block;
+            font-size: 1.78rem;
+            font-weight: 800;
+            letter-spacing: -0.65px;
+            line-height: 1.2;
+            margin-top: 5px;
+        }
+
+        .kpi-note {
+            color: #94A3B8;
+            display: block;
+            font-size: 0.67rem;
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+
+        .kpi-note strong {
+            color: #475569;
+            font-weight: 800;
+        }
+
+        .content-grid {
+            margin-top: 22px;
+        }
+
+        .panel-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            align-items: flex-start;
+            border-bottom: 1px solid #EEF2F7;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 18px 20px;
+        }
+
+        .panel-title {
+            color: #1E293B;
+            font-size: 0.87rem;
+            font-weight: 800;
+            letter-spacing: -0.1px;
+            margin: 0;
+        }
+
+        .panel-subtitle {
+            color: #94A3B8;
+            display: block;
+            font-size: 0.68rem;
+            margin-top: 3px;
+        }
+
+        .search-box {
+            align-items: center;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 9px;
+            color: #94A3B8;
+            display: flex;
+            gap: 7px;
+            min-width: 240px;
+            padding: 7px 10px;
+        }
+
+        .search-box i {
+            font-size: 0.82rem;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: 0;
+            color: #334155;
+            font-size: 0.73rem;
+            outline: 0;
+            width: 100%;
+        }
+
+        .search-box input::placeholder {
+            color: #94A3B8;
+        }
+
+        .unitrack-table {
+            margin: 0;
+        }
+
+        .unitrack-table thead th {
+            background: #F8FAFC;
+            border-bottom: 1px solid #E2E8F0;
+            color: #7C8B9F;
+            font-size: 0.61rem;
+            font-weight: 800;
+            letter-spacing: 0.58px;
+            padding: 10px 14px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .unitrack-table tbody td {
+            border-bottom: 1px solid #F1F5F9;
+            color: #475569;
+            font-size: 0.73rem;
+            padding: 11px 14px;
+            vertical-align: middle;
+        }
+
+        .unitrack-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .unitrack-table tbody tr:hover {
+            background: #FAFCFF;
+        }
+
+        .student-name {
+            color: #0F172A;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .student-matricule {
+            color: #94A3B8;
+            font-size: 0.65rem;
+            margin-top: 1px;
+        }
+
+        .group-cell {
+            color: #64748B;
+            font-size: 0.68rem;
+            white-space: nowrap;
+        }
+
+        .module-cell {
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .absences-count {
+            color: #0F172A;
+            font-size: 0.88rem;
+            font-weight: 800;
+        }
+
+        .status-pill {
+            border-radius: 999px;
+            display: inline-block;
+            font-size: 0.61rem;
+            font-weight: 800;
+            letter-spacing: 0.1px;
+            padding: 5px 9px;
+            white-space: nowrap;
+        }
+
+        .status-normal {
+            background: var(--green-soft);
+            color: #15803D;
+        }
+
+        .status-warning {
+            background: var(--amber-soft);
+            color: #B45309;
+        }
+
+        .status-danger {
+            background: var(--red-soft);
+            color: #B91C1C;
+        }
+
+        .count-square {
+            align-items: center;
+            border-radius: 6px;
+            display: inline-flex;
+            font-size: 0.68rem;
+            font-weight: 800;
+            height: 24px;
+            justify-content: center;
+            min-width: 24px;
+            padding: 0 6px;
+        }
+
+        .count-green {
+            background: var(--green-soft);
+            color: #15803D;
+        }
+
+        .count-amber {
+            background: var(--amber-soft);
+            color: #B45309;
+        }
+
+        .count-red {
+            background: var(--red-soft);
+            color: #B91C1C;
+        }
+
+        .rate-cell {
+            min-width: 112px;
+        }
+
+        .rate-value {
+            color: #334155;
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .mini-progress {
+            background: #EEF2F7;
+            border-radius: 999px;
+            height: 5px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .mini-progress span {
+            border-radius: 999px;
+            display: block;
+            height: 100%;
+        }
+
+        .bar-blue {
+            background: var(--blue);
+        }
+
+        .bar-green {
+            background: var(--green);
+        }
+
+        .bar-amber {
+            background: #F59E0B;
+        }
+
+        .bar-red {
+            background: #EF4444;
+        }
+
+        .segmented {
+            background: #F1F5F9;
+            border-radius: 8px;
+            display: inline-flex;
+            gap: 2px;
+            padding: 3px;
+        }
+
+        .segmented button {
+            background: transparent;
+            border: 0;
+            border-radius: 6px;
+            color: #64748B;
+            font-size: 0.63rem;
+            font-weight: 700;
+            padding: 5px 9px;
+        }
+
+        .segmented button.active {
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+            color: var(--blue);
+        }
+
+        .icon-action {
+            align-items: center;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            color: #64748B;
+            display: inline-flex;
+            height: 29px;
+            justify-content: center;
+            width: 29px;
+        }
+
+        .icon-action:hover {
+            background: #EFF6FF;
+            border-color: #BFDBFE;
+            color: var(--blue);
+        }
+
+        .progress-list {
+            display: flex;
+            flex-direction: column;
+            gap: 13px;
+            padding: 18px 20px 20px;
+        }
+
+        .progress-item-label {
+            align-items: baseline;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .progress-item-name {
+            color: #334155;
+            font-size: 0.69rem;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .progress-item-value {
+            color: var(--blue);
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        .progress-track {
+            background: #EEF2F7;
+            border-radius: 999px;
+            height: 7px;
+            overflow: hidden;
+        }
+
+        .progress-track span {
+            background: linear-gradient(90deg, #3B82F6, #22D3EE);
+            border-radius: 999px;
+            display: block;
+            height: 100%;
+            min-width: 2px;
+        }
+
+        .chart-wrap {
+            height: 282px;
+            padding: 14px 18px 18px;
+            position: relative;
+        }
+
+        .empty-row {
+            color: #94A3B8;
+            font-size: 0.75rem;
+            font-style: italic;
+            padding: 26px 14px !important;
+            text-align: center;
+        }
+
+        .empty-progress {
+            color: #94A3B8;
+            font-size: 0.73rem;
+            font-style: italic;
+            padding: 18px 0;
+            text-align: center;
+        }
+
+        .panel-footer {
+            background: #FAFCFF;
+            border-top: 1px solid #F1F5F9;
+            color: #94A3B8;
+            font-size: 0.65rem;
+            padding: 9px 18px;
+        }
+
+        .stack-gap {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            height: 100%;
+        }
+
+        .footer-unitrack {
+            background: var(--navy);
+            color: #94A3B8;
+            font-size: 0.68rem;
+            margin-top: 34px;
+            padding: 16px 22px;
+        }
+
+        .footer-inner {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin: 0 auto;
+            max-width: 1600px;
+        }
+
+        .footer-inner strong {
+            color: #E2E8F0;
+            font-weight: 700;
+        }
+
+        .footer-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 999px;
+            color: #E2E8F0;
+            font-size: 0.64rem;
+            font-weight: 700;
+            padding: 6px 11px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1199.98px) {
+            .topbar-inner {
+                flex-wrap: wrap;
+            }
+
+            .topnav {
+                justify-content: flex-start;
+                order: 3;
+                width: 100%;
+            }
+
+            .lang-switch {
+                margin-left: auto;
+            }
+
+            .hero-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .hero-actions {
+                flex-direction: row;
+                width: 100%;
+            }
+
+            .btn-official {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .page-wrap {
+                padding: 16px 12px 26px;
+            }
+
+            .topbar {
+                padding: 12px 12px;
+            }
+
+            .brand-subtitle {
+                font-size: 0.61rem;
+            }
+
+            .hero-card {
+                border-radius: 14px;
+                padding: 22px 20px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                min-width: 0;
+            }
+
+            .kpi-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .kpi-card {
+                min-height: 104px;
+            }
+
+            .search-box {
+                min-width: 100%;
+                width: 100%;
+            }
+
+            .footer-unitrack {
+                font-size: 0.62rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="bi bi-mortarboard-fill" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="brand-title">UniTrack <span class="brand-version">V2.0 UML</span></span>
+                <span class="brand-subtitle">Gestion d'Assiduité Universitaire par Code</span>
+            </div>
+        </div>
+
+        <nav class="topnav" aria-label="Navigation principale">
+            <a class="topnav-pill" href="#">1. Espace Étudiant</a>
+            <a class="topnav-pill" href="#">2. Espace Enseignant</a>
+            <a class="topnav-pill" href="#">3. Admin (Dép. Info)</a>
+            <a class="topnav-pill active" href="/api/reports/dashboard/" aria-current="page">4. Super Admin (Faculté)</a>
+        </nav>
+
+        <div class="lang-switch" role="group" aria-label="Langue de l'interface">
+            <button type="button" class="lang-btn active" aria-pressed="true">FR</button>
+            <button type="button" class="lang-btn" aria-pressed="false">EN</button>
+        </div>
+    </div>
+</header>
+
+<main class="page-wrap">
+    <section class="hero-card" aria-labelledby="heroTitle">
+        <div class="hero-copy">
+            <div class="hero-eyebrow">
+                <span class="crown-icon"><i class="bi bi-crown-fill" aria-hidden="true"></i></span>
+                <span class="gold-badge">Super Admin / Superviseur (UC-SUP-01)</span>
+            </div>
+            <p class="hero-dept">Doyen de la Faculté des Sciences — UMBB Boumerdès</p>
+            <h1 class="hero-title" id="heroTitle">Supervision Multi-Départements &amp; Audit Académique</h1>
+            <p class="hero-subtitle">
+                Vue consolidée en temps réel des indicateurs d'assiduité, des absences
+                enseignants et des dossiers disciplinaires de la faculté.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <button type="button" id="exportPdf" class="btn-official btn-pdf">
+                <i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>
+                <span>Rapport Officiel PDF (FP12)</span>
+            </button>
+            <button type="button" id="exportExcel" class="btn-official btn-excel">
+                <i class="bi bi-file-earmark-excel-fill" aria-hidden="true"></i>
+                <span>Export Global Excel (FP12)</span>
+            </button>
+        </div>
+    </section>
+
+    <section class="group-strip" aria-labelledby="groupStripTitle">
+        <div class="strip-heading">
+            <h2 class="strip-title" id="groupStripTitle">
+                Groupes / Modules du département
+                <span>(cliquer pour inspecter)</span>
+            </h2>
+            <span class="strip-status" id="groupStripStatus">Chargement des groupes…</span>
+        </div>
+        <div class="group-cards" id="groupCards" role="list" aria-live="polite">
+            <button type="button" class="group-card active" disabled>
+                <span class="group-card-label">All / Tous</span>
+                <span class="group-card-value">—</span>
+                <span class="group-card-meta">Chargement…</span>
+            </button>
+        </div>
+    </section>
+
+    <div id="alertBox" class="alert alert-danger alert-unitrack d-none" role="alert"></div>
+
+    <section class="kpi-grid" aria-label="Indicateurs clés de la faculté">
+        <article class="kpi-card">
+            <div class="kpi-icon kpi-blue"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></div>
+            <div class="kpi-content">
+                <span class="kpi-label">Assiduité globale</span>
+                <strong class="kpi-value" id="kpiTaux">—</strong>
+                <span class="kpi-note">Sur l'ensemble des séances clôturées</span>
+            </div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-icon kpi-amber"><i class="bi bi-person-exclamation" aria-hidden="true"></i></div>
+            <div class="kpi-content">
+                <span class="kpi-label">Absences étudiants</span>
+                <strong class="kpi-value" id="kpiAbsences">—</strong>
+                <span class="kpi-note">Dont <strong id="kpiAlertesInline">0</strong> en seuil d'alerte</span>
+            </div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-icon kpi-red"><i class="bi bi-person-workspace" aria-hidden="true"></i></div>
+            <div class="kpi-content">
+                <span class="kpi-label">Absences enseignants</span>
+                <strong class="kpi-value" id="kpiNonAssurees">—</strong>
+                <span class="kpi-note">Séances non assurées (FP16)</span>
+            </div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-icon kpi-purple"><i class="bi bi-folder-x" aria-hidden="true"></i></div>
+            <div class="kpi-content">
+                <span class="kpi-label">Dossiers d'exclusion</span>
+                <strong class="kpi-value" id="kpiExclusions">—</strong>
+                <span class="kpi-note">Seuil &gt;= 5 absences (FP15)</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="content-grid row g-4" aria-label="Détails de supervision">
+        <div class="col-12 col-xl-7">
+            <article class="panel-card h-100">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">État Détaillé des Absences Étudiants &amp; Dossiers d'Exclusion</h2>
+                        <span class="panel-subtitle">Suivi nominatif et statut disciplinaire par module critique</span>
+                    </div>
+                    <label class="search-box" for="studentSearch">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" id="studentSearch" placeholder="Rechercher étudiant / matricule..." autocomplete="off">
+                    </label>
+                </div>
+                <div class="table-responsive">
+                    <table class="table unitrack-table">
+                        <thead>
+                            <tr>
+                                <th>Étudiant &amp; Matricule</th>
+                                <th>Groupe</th>
+                                <th>Module critique</th>
+                                <th>Absences</th>
+                                <th>Statut / Dossier</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentBody">
+                            <tr><td colspan="5" class="empty-row">Chargement des étudiants…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="panel-footer" id="studentTableFooter">—</div>
+            </article>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="stack-gap">
+                <article class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Absences Enseignants &amp; Taux de Réalisation</h2>
+                            <span class="panel-subtitle">Séances non assurées et assiduité par enseignant / module</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table unitrack-table">
+                            <thead>
+                                <tr>
+                                    <th>Enseignant</th>
+                                    <th>Module</th>
+                                    <th>Non assurées</th>
+                                    <th>Taux d'assiduité</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacherBody">
+                                <tr><td colspan="4" class="empty-row">Chargement des enseignants…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Taux de Présence par Module / Groupe</h2>
+                            <span class="panel-subtitle">Vue synthétique et graphique de l'assiduité</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="segmented" id="progressScope" role="group" aria-label="Périmètre du taux de présence">
+                                <button type="button" class="active" data-progress-view="module">Modules</button>
+                                <button type="button" data-progress-view="groupe">Groupes</button>
+                            </div>
+                            <button type="button" class="icon-action" id="chartToggle" title="Afficher le graphique" aria-label="Afficher le graphique" aria-pressed="false">
+                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-list" id="progressList">
+                        <div class="empty-progress">Chargement des taux de présence…</div>
+                    </div>
+                    <div class="chart-wrap d-none" id="chartWrap">
+                        <canvas id="progressChart" aria-label="Graphique du taux de présence" role="img"></canvas>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="footer-unitrack">
+    <div class="footer-inner">
+        <span>
+            <strong>UniTrack</strong> — University Attendance Management System |
+            Université M'hamed Bougara • Boumerdès • Faculté des Sciences
+        </span>
+        <span class="footer-badge">Encadré par : Dr. YAHIATENE</span>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var endpoints = {
+        summary: '/api/reports/dashboard/summary/',
+        pdf: '/api/reports/export/pdf/',
+        excel: '/api/reports/export/excel/'
+    };
+
+    var initialParams = new URLSearchParams(window.location.search);
+
+    var state = {
+        groupeId: initialParams.get('groupe_id') || '',
+        seuils: { alerte: 3, exclusion: 5 },
+        students: [],
+        teachers: [],
+        modules: [],
+        groupCards: [],
+        progressView: 'module',
+        chartVisible: false
+    };
+
+    var progressChart = null;
+
+    var elements = {
+        groupCards: document.getElementById('groupCards'),
+        groupStripStatus: document.getElementById('groupStripStatus'),
+        alertBox: document.getElementById('alertBox'),
+        kpiTaux: document.getElementById('kpiTaux'),
+        kpiAbsences: document.getElementById('kpiAbsences'),
+        kpiAlertesInline: document.getElementById('kpiAlertesInline'),
+        kpiNonAssurees: document.getElementById('kpiNonAssurees'),
+        kpiExclusions: document.getElementById('kpiExclusions'),
+        studentSearch: document.getElementById('studentSearch'),
+        studentBody: document.getElementById('studentBody'),
+        studentTableFooter: document.getElementById('studentTableFooter'),
+        teacherBody: document.getElementById('teacherBody'),
+        progressList: document.getElementById('progressList'),
+        progressScope: document.getElementById('progressScope'),
+        chartToggle: document.getElementById('chartToggle'),
+        chartWrap: document.getElementById('chartWrap'),
+        exportPdf: document.getElementById('exportPdf'),
+        exportExcel: document.getElementById('exportExcel')
+    };
+
+    function escapeHtml(value) {
+        return String(value === null || value === undefined ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function formatPercent(value) {
+        return Number(value || 0).toLocaleString('fr-FR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' %';
+    }
+
+    function formatNumber(value) {
+        return Number(value || 0).toLocaleString('fr-FR');
+    }
+
+    function clampPercent(value) {
+        return Math.min(100, Math.max(0, Number(value || 0)));
+    }
+
+    function shortGroupLabel(label) {
+        var match = /^(.*) - Groupe (\d+) \(Année (\d+)\)$/.exec(label || '');
+        if (!match) {
+            return label || '';
+        }
+        return match[1] + ' · G' + match[2] + ' · A' + match[3];
+    }
+
+    function currentFilters() {
+        var params = new URLSearchParams();
+        if (state.groupeId) {
+            params.set('groupe_id', state.groupeId);
+        }
+        return params;
+    }
+
+    function syncUrl() {
+        var url = new URL(window.location.href);
+        if (state.groupeId) {
+            url.searchParams.set('groupe_id', state.groupeId);
+        } else {
+            url.searchParams.delete('groupe_id');
+        }
+        window.history.replaceState({}, '', url);
+    }
+
+    function showError(message) {
+        elements.alertBox.textContent = message;
+        elements.alertBox.classList.remove('d-none');
+    }
+
+    function clearError() {
+        elements.alertBox.classList.add('d-none');
+        elements.alertBox.textContent = '';
+    }
+
+    async function fetchJson(url) {
+        var response = await fetch(url, {
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        });
+        if (!response.ok) {
+            var message = 'Erreur HTTP ' + response.status;
+            try {
+                var payload = await response.json();
+                message = payload.detail || message;
+            } catch (error) {
+                // Keep the status code when the response body is not JSON.
+            }
+            throw new Error(message);
+        }
+        return response.json();
+    }
+
+    function renderGroupCards(cards) {
+        var groupCards = cards || [];
+        if (!groupCards.length) {
+            elements.groupCards.innerHTML = (
+                '<button type="button" class="group-card active" disabled>'
+                + '<span class="group-card-label">All / Tous</span>'
+                + '<span class="group-card-value">0,00 %</span>'
+                + '<span class="group-card-meta">Aucune donnée</span>'
+                + '</button>'
+            );
+            return;
+        }
+
+        elements.groupCards.innerHTML = groupCards.map(function (card) {
+            var cardId = card.groupe_id === null || card.groupe_id === undefined
+                ? ''
+                : String(card.groupe_id);
+            var active = cardId === String(state.groupeId || '');
+            var label = cardId ? card.groupe : 'All / Tous';
+            var meta = cardId
+                ? formatNumber(card.nb_seances) + ' séances clôturées'
+                : 'Vue consolidée de la faculté';
+
+            return '<button type="button" class="group-card' + (active ? ' active' : '') + '"'
+                + ' role="listitem" data-groupe-id="' + escapeHtml(cardId) + '"'
+                + ' aria-pressed="' + (active ? 'true' : 'false') + '"'
+                + ' title="' + escapeHtml(label) + '">'
+                + '<span class="group-card-label">' + escapeHtml(label) + '</span>'
+                + '<span class="group-card-value">' + formatPercent(card.taux_assiduite) + '</span>'
+                + '<span class="group-card-meta">' + escapeHtml(meta) + '</span>'
+                + '</button>';
+        }).join('');
+
+        var cardCount = Math.max(0, groupCards.length - 1);
+        elements.groupStripStatus.textContent = (
+            formatNumber(cardCount)
+            + (cardCount > 1 ? ' groupes inspectables' : ' groupe inspectable')
+        );
+    }
+
+    function renderKpis(kpis) {
+        elements.kpiTaux.textContent = formatPercent(kpis.taux_assiduite_global);
+        elements.kpiAbsences.textContent = formatNumber(kpis.total_absences_non_justifiees);
+        elements.kpiAlertesInline.textContent = formatNumber(kpis.etudiants_en_alerte_count);
+        elements.kpiNonAssurees.textContent = formatNumber(kpis.total_seances_non_assurees);
+        elements.kpiExclusions.textContent = formatNumber(kpis.etudiants_en_exclusion_count);
+    }
+
+    function statusBadge(level) {
+        if (level === 'danger') {
+            return '<span class="status-pill status-danger">Dossier d\'Exclusion (Seuil '
+                + state.seuils.exclusion + ')</span>';
+        }
+        if (level === 'warning') {
+            return '<span class="status-pill status-warning">Alerte Envoyée (Seuil '
+                + state.seuils.alerte + ')</span>';
+        }
+        return '<span class="status-pill status-normal">Normal (Actif)</span>';
+    }
+
+    function renderStudents(rows) {
+        state.students = rows || [];
+        renderFilteredStudents();
+    }
+
+    function renderFilteredStudents() {
+        var query = elements.studentSearch.value.trim().toLowerCase();
+        var rows = state.students.filter(function (row) {
+            if (!query) {
+                return true;
+            }
+            return (
+                (row.nom + ' ' + row.prenom + ' ' + row.matricule)
+                    .toLowerCase()
+                    .indexOf(query) !== -1
+            );
+        });
+
+        elements.studentTableFooter.textContent = (
+            formatNumber(rows.length)
+            + (rows.length > 1 ? ' étudiants affichés' : ' étudiant affiché')
+        );
+
+        if (!rows.length) {
+            elements.studentBody.innerHTML = (
+                '<tr><td colspan="5" class="empty-row">Aucun étudiant ne correspond à cette recherche.</td></tr>'
+            );
+            return;
+        }
+
+        elements.studentBody.innerHTML = rows.map(function (row) {
+            return '<tr>'
+                + '<td>'
+                + '<div class="student-name">' + escapeHtml(row.nom) + ' ' + escapeHtml(row.prenom) + '</div>'
+                + '<div class="student-matricule">' + escapeHtml(row.matricule) + '</div>'
+                + '</td>'
+                + '<td><span class="group-cell">' + escapeHtml(shortGroupLabel(row.groupe)) + '</span></td>'
+                + '<td><span class="module-cell">' + escapeHtml(row.module) + '</span></td>'
+                + '<td><span class="absences-count">' + formatNumber(row.absences_non_justifiees) + '</span></td>'
+                + '<td>' + statusBadge(row.niveau_alerte) + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    function countClass(value) {
+        if (value >= 2) {
+            return 'count-red';
+        }
+        if (value === 1) {
+            return 'count-amber';
+        }
+        return 'count-green';
+    }
+
+    function rateBarClass(value) {
+        if (value >= 80) {
+            return 'bar-green';
+        }
+        if (value >= 60) {
+            return 'bar-amber';
+        }
+        return 'bar-red';
+    }
+
+    function renderTeachers(rows) {
+        state.teachers = rows || [];
+        if (!state.teachers.length) {
+            elements.teacherBody.innerHTML = (
+                '<tr><td colspan="4" class="empty-row">Aucune séance pour ces filtres.</td></tr>'
+            );
+            return;
+        }
+
+        elements.teacherBody.innerHTML = state.teachers.map(function (row) {
+            var rate = clampPercent(row.taux_assiduite);
+            return '<tr>'
+                + '<td><div class="student-name">' + escapeHtml(row.enseignant) + '</div></td>'
+                + '<td><span class="module-cell">' + escapeHtml(row.module) + '</span></td>'
+                + '<td><span class="count-square ' + countClass(row.nb_seances_non_assurees) + '">'
+                + formatNumber(row.nb_seances_non_assurees)
+                + '</span></td>'
+                + '<td>'
+                + '<div class="rate-cell">'
+                + '<span class="rate-value">' + formatPercent(row.taux_assiduite) + '</span>'
+                + '<div class="mini-progress"><span class="' + rateBarClass(rate) + '" style="width: ' + rate + '%"></span></div>'
+                + '</div>'
+                + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    function progressItems() {
+        if (state.progressView === 'groupe') {
+            return (state.groupCards || [])
+                .filter(function (row) {
+                    return row.groupe_id !== null && row.groupe_id !== undefined;
+                })
+                .map(function (row) {
+                    return {
+                        label: shortGroupLabel(row.groupe),
+                        fullLabel: row.groupe,
+                        rate: row.taux_assiduite
+                    };
+                });
+        }
+        return (state.modules || []).map(function (row) {
+            return {
+                label: row.module,
+                fullLabel: row.module,
+                rate: row.taux_assiduite
+            };
+        });
+    }
+
+    function renderProgress() {
+        var items = progressItems();
+
+        if (!items.length) {
+            elements.progressList.innerHTML = (
+                '<div class="empty-progress">Aucun taux de présence disponible pour ces filtres.</div>'
+            );
+        } else {
+            elements.progressList.innerHTML = items.map(function (item) {
+                var rate = clampPercent(item.rate);
+                return '<div class="progress-item">'
+                    + '<div class="progress-item-label">'
+                    + '<span class="progress-item-name" title="' + escapeHtml(item.fullLabel) + '">'
+                    + escapeHtml(item.label)
+                    + '</span>'
+                    + '<span class="progress-item-value">' + formatPercent(item.rate) + '</span>'
+                    + '</div>'
+                    + '<div class="progress-track"><span style="width: ' + rate + '%"></span></div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        if (state.chartVisible) {
+            renderProgressChart(items);
+        }
+    }
+
+    function renderProgressChart(items) {
+        var labels = items.map(function (item) { return item.label; });
+        var values = items.map(function (item) { return item.rate; });
+
+        if (progressChart) {
+            progressChart.destroy();
+        }
+
+        progressChart = new Chart(document.getElementById('progressChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Taux d'assiduité",
+                    data: values,
+                    backgroundColor: 'rgba(37, 99, 235, 0.82)',
+                    borderColor: '#2563EB',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    maxBarThickness: 26
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return "Taux d'assiduité : " + formatPercent(context.parsed.x);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function (value) { return value + ' %'; }
+                        },
+                        grid: { color: 'rgba(15, 23, 42, 0.06)' }
+                    },
+                    y: {
+                        ticks: {
+                            autoSkip: false,
+                            font: { size: 10 }
+                        },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function setChartVisibility(visible) {
+        state.chartVisible = visible;
+        elements.chartWrap.classList.toggle('d-none', !visible);
+        elements.progressList.classList.toggle('d-none', visible);
+        elements.chartToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+        elements.chartToggle.title = visible ? 'Afficher la liste' : 'Afficher le graphique';
+        elements.chartToggle.setAttribute(
+            'aria-label',
+            visible ? 'Afficher la liste' : 'Afficher le graphique'
+        );
+        elements.chartToggle.innerHTML = visible
+            ? '<i class="bi bi-list-ul" aria-hidden="true"></i>'
+            : '<i class="bi bi-bar-chart-line" aria-hidden="true"></i>';
+
+        if (visible) {
+            renderProgressChart(progressItems());
+        } else if (progressChart) {
+            progressChart.destroy();
+            progressChart = null;
+        }
+    }
+
+    function downloadReport(url) {
+        var params = currentFilters();
+        params.set('report_type', 'attendance_summary');
+        window.location.href = url + '?' + params.toString();
+    }
+
+    async function refreshDashboard() {
+        clearError();
+        elements.groupStripStatus.textContent = 'Chargement des groupes…';
+        elements.exportPdf.disabled = true;
+        elements.exportExcel.disabled = true;
+
+        var query = currentFilters().toString();
+        var suffix = query ? '?' + query : '';
+
+        try {
+            var summary = await fetchJson(endpoints.summary + suffix);
+
+            state.seuils = summary.seuils || state.seuils;
+            state.modules = summary.by_module || [];
+            state.groupes = summary.by_groupe || [];
+            state.groupCards = summary.group_cards || [];
+
+            renderGroupCards(summary.group_cards || []);
+            renderKpis(summary.kpis);
+            renderStudents(summary.students_detail || []);
+            renderTeachers(summary.by_enseignant || []);
+            renderProgress();
+
+            var now = new Date().toLocaleTimeString('fr-DZ', {
+                timeZone: 'Africa/Algiers',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            elements.groupStripStatus.textContent += ' · actualisé à ' + now;
+        } catch (error) {
+            showError('Impossible de charger le tableau de bord : ' + error.message);
+            elements.groupStripStatus.textContent = 'Données indisponibles';
+        } finally {
+            elements.exportPdf.disabled = false;
+            elements.exportExcel.disabled = false;
+        }
+    }
+
+    elements.groupCards.addEventListener('click', function (event) {
+        var card = event.target.closest('.group-card');
+        if (!card || card.disabled) {
+            return;
+        }
+        state.groupeId = card.getAttribute('data-groupe-id') || '';
+        syncUrl();
+        refreshDashboard();
+    });
+
+    elements.studentSearch.addEventListener('input', renderFilteredStudents);
+
+    elements.progressScope.addEventListener('click', function (event) {
+        var button = event.target.closest('button[data-progress-view]');
+        if (!button) {
+            return;
+        }
+        state.progressView = button.getAttribute('data-progress-view');
+        elements.progressScope.querySelectorAll('button').forEach(function (item) {
+            item.classList.toggle('active', item === button);
+        });
+        renderProgress();
+    });
+
+    elements.chartToggle.addEventListener('click', function () {
+        setChartVisibility(!state.chartVisible);
+    });
+
+    elements.exportPdf.addEventListener('click', function () {
+        downloadReport(endpoints.pdf);
+    });
+
+    elements.exportExcel.addEventListener('click', function () {
+        downloadReport(endpoints.excel);
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.querySelectorAll('.lang-btn').forEach(function (item) {
+                var active = item === button;
+                item.classList.toggle('active', active);
+                item.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        });
+    });
+
+    refreshDashboard();
+})();
+</script>
+</body>
+</html>
