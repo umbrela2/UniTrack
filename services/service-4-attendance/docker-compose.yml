@@ -1,0 +1,45 @@
+# Déploiement de S4 sur SON serveur (Serveur 4) : api + worker consumer + worker scheduler + attendance_db.
+# RabbitMQ / Consul / Traefik tournent sur le serveur d'infra (voir ../../infra).
+name: unitrack-s4
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes: [attendance_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment: {RUN_MIGRATIONS: "1"}
+    ports: ["8004:8004"]
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8004/health/')"]
+      interval: 10s
+      retries: 10
+
+  consumer:           # reçoit les événements academic.* de S3 (RabbitMQ)
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: python manage.py consume_events
+    depends_on: {api: {condition: service_healthy}}
+
+  scheduler:          # publie l'outbox, déclare les enseignants absents (FP12), clôture auto
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: python manage.py run_scheduler
+    depends_on: {api: {condition: service_healthy}}
+
+volumes:
+  attendance_pgdata:
