@@ -1,0 +1,49 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniTrack – Enseignant</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+<body class="bg-light"><div id="root"></div><script src="app.js"></script><script>
+requireRole("ENSEIGNANT");
+document.getElementById("root").innerHTML = head("Enseignant") + `
+<h5>Mes séances du jour</h5><div id="list" class="mb-4"></div>
+<div id="panel" class="d-none card card-body">
+  <div class="d-flex justify-content-between align-items-start flex-wrap">
+    <div><h5 id="title"></h5><div id="stats" class="text-muted"></div></div>
+    <div class="text-center"><div style="font-size:4rem;letter-spacing:.4rem;font-weight:700" id="code">------</div>
+      <div id="timer" class="text-muted"></div>
+      <button class="btn btn-sm btn-outline-secondary" onclick="regen()">Nouveau code</button></div></div>
+  <table class="table table-sm mt-3"><thead><tr><th>Matricule</th><th>Étudiant</th><th>Statut</th><th>Mode</th><th></th></tr></thead><tbody id="roster"></tbody></table>
+  <div><button class="btn btn-danger" onclick="closeSeance()">Clôturer la séance</button>
+  <button class="btn btn-outline-primary" onclick="exportCsv()">Exporter CSV</button></div></div></div>`;
+let cur = null, timer = null, expires = null;
+async function load(){
+  const list = await api("/seances/today/");
+  document.getElementById("list").innerHTML = list.length ? list.map(s => `<div class="card card-body mb-2 flex-row justify-content-between align-items-center">
+    <div><b>${s.module_intitule}</b> · ${s.type_seance} · ${s.group_label} · ${s.heure_debut.slice(0,5)}–${s.heure_fin.slice(0,5)} · ${s.salle_nom}
+    <span class="badge bg-secondary">${s.statut_label}</span></div>
+    <div>${s.statut==="PLANIFIEE" ? `<button class="btn btn-success btn-sm" onclick="startS(${s.id})">Démarrer l'appel</button>` : ""}
+    ${s.statut==="EN_COURS" ? `<button class="btn btn-primary btn-sm" onclick="open_(${s.id})">Ouvrir</button>` : ""}</div></div>`).join("") : "<p>Aucune séance aujourd'hui.</p>";
+}
+async function startS(id){ try { await api(`/seances/${id}/start/`, {method:"POST"}); await load(); open_(id); } catch(e){ toast(e.message,false); } }
+async function open_(id){ cur = id; document.getElementById("panel").classList.remove("d-none"); clearInterval(timer); await refresh(); timer = setInterval(refresh, 4000); }
+async function refresh(){
+  try {
+    const r = await api(`/seances/${cur}/presences/`); const c = await api(`/seances/${cur}/code/`).catch(()=>null);
+    title.textContent = r.seance.module_intitule + " – " + r.seance.group_label;
+    stats.textContent = `${r.summary.presents} présents · ${r.summary.absents} absents · ${r.summary.en_attente} en attente`;
+    if (c) { code.textContent = c.code; expires = Date.now() + c.seconds_remaining*1000; } else { code.textContent = "------"; expires = null; }
+    roster.innerHTML = r.students.map(s => `<tr><td>${s.matricule}</td><td>${s.prenom} ${s.nom}</td>
+      <td><span class="badge bg-${s.statut==="PRESENT"?"success":s.statut==="ABSENT"?"danger":"secondary"}">${s.statut||"En attente"}</span></td><td>${s.mode||""}</td>
+      <td><button class="btn btn-sm btn-outline-success" onclick="mark('${s.student_id}','PRESENT')">Présent</button>
+      <button class="btn btn-sm btn-outline-danger" onclick="mark('${s.student_id}','ABSENT')">Absent</button></td></tr>`).join("");
+    if (r.seance.statut !== "EN_COURS") clearInterval(timer);
+  } catch(e){ toast(e.message,false); }
+}
+setInterval(()=>{ if(expires!==null){ const s=Math.max(0,Math.round((expires-Date.now())/1000)); timer_.textContent = s? `Expire dans ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}` : "Code expiré – générez-en un nouveau"; } },1000);
+const timer_ = document.getElementById("timer");
+async function regen(){ try { await api(`/seances/${cur}/regenerate-code/`, {method:"POST"}); refresh(); } catch(e){ toast(e.message,false); } }
+async function mark(sid, st){ try { await api(`/seances/${cur}/presences/${sid}/`, {method:"PUT", body:{statut:st}}); refresh(); } catch(e){ toast(e.message,false); } }
+async function closeSeance(){ if(!confirm("Clôturer ? Les étudiants sans présence seront marqués absents.")) return;
+  try { await api(`/seances/${cur}/close/`, {method:"POST"}); toast("Séance clôturée"); await refresh(); await load(); } catch(e){ toast(e.message,false); } }
+async function exportCsv(){ const r = await fetch(store.base+`/api/attendance/v1/seances/${cur}/export/`, {headers:{Authorization:"Bearer "+store.token}});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await r.blob()); a.download = `presences_${cur}.csv`; a.click(); }
+load().catch(e => toast(e.message,false));
+</script></body></html>

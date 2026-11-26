@@ -1,0 +1,31 @@
+# Serveur d'INFRA partagé (un seul membre le lance) : RabbitMQ + Consul + Traefik.
+# Les microservices S1..S6 tournent sur d'AUTRES serveurs et s'enregistrent dans Consul.
+name: unitrack-infra
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: unitrack
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change-me}
+    ports: ["5672:5672", "15672:15672"]          # 15672 = console web
+
+  consul:
+    image: hashicorp/consul:1.19
+    restart: unless-stopped
+    command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -bind=0.0.0.0
+    ports: ["8500:8500"]                          # UI + API : http://INFRA_IP:8500
+
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true                        # dashboard :8080 (désactiver en prod réelle)
+      - --entrypoints.web.address=:80
+      - --providers.consulcatalog=true
+      - --providers.consulcatalog.exposedByDefault=false
+      - --providers.consulcatalog.refreshInterval=5s
+      - --providers.consulcatalog.endpoint.address=consul:8500
+    ports: ["80:80", "8080:8080"]
+    depends_on: [consul]
