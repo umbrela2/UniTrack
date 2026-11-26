@@ -1,0 +1,488 @@
+name: unitrack-all
+
+x-common-env: &common-env
+  JWT_SECRET: dev-shared-secret-change-me
+  RABBITMQ_URL: amqp://unitrack:change-me@rabbitmq:5672/%2F
+  CONSUL_HOST: consul
+  CONSUL_PORT: "8500"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: unitrack
+      RABBITMQ_DEFAULT_PASS: change-me
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  consul:
+    image: hashicorp/consul:1.19
+    restart: unless-stopped
+    command: agent -dev -ui -client=0.0.0.0
+    ports:
+      - "8500:8500"
+    networks:
+      - unitrack_net
+
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --providers.consulcatalog=true
+      - --providers.consulcatalog.exposedByDefault=false
+      - --providers.consulcatalog.refreshInterval=5s
+      - --providers.consulcatalog.endpoint.address=consul:8500
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=unitrack_net
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - consul
+    networks:
+      - unitrack_net
+
+  db-s1:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s1_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  db-s2:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s2_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d users_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  db-s3:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: academic_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s3_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d academic_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  db-s4:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: attendance_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s4_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d attendance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  db-s5:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s5_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d notifications_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  db-s6:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: statistics_db
+      POSTGRES_USER: unitrack
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_s6_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitrack -d statistics_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - unitrack_net
+
+  s1-auth:
+    build:
+      context: ../services/service-1-auth
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      DB_HOST: db-s1
+      DB_NAME: auth_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+    ports:
+      - "8001:8001"
+    depends_on:
+      db-s1:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s1-auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.s1-auth.entrypoints=web"
+      - "traefik.http.routers.s1-auth.service=s1-auth"
+      - "traefik.http.services.s1-auth.loadbalancer.server.port=8001"
+    networks:
+      - unitrack_net
+
+  s2-users:
+    build:
+      context: ../services/service-2-users
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      DEBUG: "False"
+      ALLOWED_HOSTS: "*"
+      DB_HOST: db-s2
+      DB_NAME: users_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      RUN_MIGRATIONS: "True"
+      CONSUL_REGISTER: "True"
+      SERVICE_NAME: user-management
+      SERVICE_HOST: s2-users
+      SERVICE_PORT: "8002"
+    ports:
+      - "8002:8002"
+    depends_on:
+      db-s2:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      consul:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s2-users.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.s2-users.entrypoints=web"
+      - "traefik.http.routers.s2-users.service=s2-users"
+      - "traefik.http.services.s2-users.loadbalancer.server.port=8002"
+    networks:
+      - unitrack_net
+
+  s3-academic:
+    build:
+      context: ../services/service-3-academic
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: "*"
+      DB_HOST: db-s3
+      DB_NAME: academic_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      RABBITMQ_ENABLED: "true"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: unitrack
+      RABBITMQ_PASSWORD: change-me
+      RABBITMQ_VHOST: "/"
+      RABBITMQ_EXCHANGE: unitrack.events
+      CONSUL_ENABLED: "true"
+      SERVICE_ID: service-3-academic-8003
+      SERVICE_NAME: service-3-academic
+      SERVICE_HOST: s3-academic
+      SERVICE_PORT: "8003"
+    ports:
+      - "8003:8003"
+    depends_on:
+      db-s3:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      consul:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s3-academic.rule=PathPrefix(`/api/academic`)"
+      - "traefik.http.routers.s3-academic.entrypoints=web"
+      - "traefik.http.routers.s3-academic.service=s3-academic"
+      - "traefik.http.services.s3-academic.loadbalancer.server.port=8003"
+    networks:
+      - unitrack_net
+
+  s4-attendance:
+    build:
+      context: ../services/service-4-attendance
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      DJANGO_ALLOWED_HOSTS: "*"
+      DB_HOST: db-s4
+      DB_NAME: attendance_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      RUN_MIGRATIONS: "1"
+      CONSUL_ENABLED: "true"
+      SERVICE_NAME: attendance-service
+      SERVICE_ADDRESS: s4-attendance
+      SERVICE_PORT: "8004"
+      TRAEFIK_PATH_PREFIX: /api/attendance
+    ports:
+      - "8004:8004"
+    depends_on:
+      db-s4:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      consul:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s4-attendance.rule=PathPrefix(`/api/attendance`)"
+      - "traefik.http.routers.s4-attendance.entrypoints=web"
+      - "traefik.http.routers.s4-attendance.service=s4-attendance"
+      - "traefik.http.services.s4-attendance.loadbalancer.server.port=8004"
+    networks:
+      - unitrack_net
+
+  s5-notifications:
+    build:
+      context: ../services/service-5-notifications
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      DB_HOST: db-s5
+      DB_NAME: notifications_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: unitrack
+      RABBITMQ_PASSWORD: change-me
+      RABBITMQ_VHOST: "/"
+      RABBITMQ_EXCHANGE: unitrack.events
+      SERVICE_NAME: service-5-notifications
+      SERVICE_PORT: "8005"
+    ports:
+      - "8005:8005"
+    depends_on:
+      db-s5:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      consul:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s5-notifications.rule=PathPrefix(`/api/notifications`)"
+      - "traefik.http.routers.s5-notifications.entrypoints=web"
+      - "traefik.http.routers.s5-notifications.service=s5-notifications"
+      - "traefik.http.services.s5-notifications.loadbalancer.server.port=8005"
+    networks:
+      - unitrack_net
+
+  s6-reports:
+    build:
+      context: ../services/service-6-reports
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8006 --workers 3 --timeout 120 --access-logfile - --error-logfile -
+    environment:
+      <<: *common-env
+      DEBUG: "False"
+      ALLOWED_HOSTS: "*"
+      USE_SQLITE: "False"
+      USE_POSTGRES: "True"
+      DB_HOST: db-s6
+      DB_NAME: statistics_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      REQUIRE_AUTH: "False"
+      CONSUL_SERVICE_NAME: s6-reports
+      CONSUL_SERVICE_ADDRESS: s6-reports
+      CONSUL_SERVICE_PORT: "8006"
+      CONSUL_HEALTH_CHECK_URL: http://s6-reports:8006/health/
+    ports:
+      - "8006:8006"
+    depends_on:
+      db-s6:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      consul:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=unitrack_net"
+      - "traefik.http.routers.s6-reports.rule=PathPrefix(`/api/statistics`)"
+      - "traefik.http.routers.s6-reports.entrypoints=web"
+      - "traefik.http.routers.s6-reports.service=s6-reports"
+      - "traefik.http.services.s6-reports.loadbalancer.server.port=8006"
+    networks:
+      - unitrack_net
+
+  s4-consumer:
+    build:
+      context: ../services/service-4-attendance
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["python", "manage.py", "consume_events"]
+    environment:
+      <<: *common-env
+      DJANGO_ALLOWED_HOSTS: "*"
+      DB_HOST: db-s4
+      DB_NAME: attendance_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      CONSUL_ENABLED: "false"
+    depends_on:
+      db-s4:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s4-attendance:
+        condition: service_started
+    networks:
+      - unitrack_net
+
+  s5-consumer:
+    build:
+      context: ../services/service-5-notifications
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["python", "rabbitmq_consumer.py"]
+    environment:
+      <<: *common-env
+      DB_HOST: db-s5
+      DB_NAME: notifications_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: unitrack
+      RABBITMQ_PASSWORD: change-me
+      RABBITMQ_VHOST: "/"
+      RABBITMQ_EXCHANGE: unitrack.events
+    depends_on:
+      db-s5:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s5-notifications:
+        condition: service_started
+    networks:
+      - unitrack_net
+
+  s6-consumer:
+    build:
+      context: ../services/service-6-reports
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["python", "manage.py", "consume_events"]
+    environment:
+      <<: *common-env
+      DEBUG: "False"
+      ALLOWED_HOSTS: "*"
+      USE_SQLITE: "False"
+      USE_POSTGRES: "True"
+      DB_HOST: db-s6
+      DB_NAME: statistics_db
+      DB_USER: unitrack
+      DB_PASSWORD: change-me
+      DB_PORT: "5432"
+      CONSUL_SERVICE_NAME: s6-reports
+      CONSUL_SERVICE_ADDRESS: s6-reports
+      CONSUL_SERVICE_PORT: "8006"
+    depends_on:
+      db-s6:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s6-reports:
+        condition: service_started
+    networks:
+      - unitrack_net
+
+volumes:
+  db_s1_data:
+  db_s2_data:
+  db_s3_data:
+  db_s4_data:
+  db_s5_data:
+  db_s6_data:
+
+networks:
+  unitrack_net:
+    name: unitrack_net
+    driver: bridge
