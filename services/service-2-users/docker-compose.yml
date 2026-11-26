@@ -1,0 +1,38 @@
+# INFRA : Traefik + Consul + RabbitMQ (serveur "infra", ou ton PC en dev)
+#   docker compose up -d
+# Traefik (entrée)  : http://localhost         Dashboard : http://localhost:8080
+# Consul UI         : http://localhost:8500    RabbitMQ UI : http://localhost:15672 (guest/guest)
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: unitrack-traefik
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./deploy/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+    depends_on:
+      - consul
+    restart: unless-stopped
+
+  consul:
+    image: hashicorp/consul:1.20
+    container_name: unitrack-consul
+    command: agent -dev -client=0.0.0.0 -ui
+    ports:
+      - "8500:8500"
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: unitrack-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
+

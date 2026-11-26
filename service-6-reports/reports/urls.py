@@ -1,7 +1,6 @@
 from django.urls import path
 
 from .views import (
-    DashboardPageView,
     DashboardSummaryView,
     ExcelExportView,
     HealthView,
@@ -13,11 +12,6 @@ from .views import (
 
 urlpatterns = [
     path('health/', HealthView.as_view(), name='health'),
-    path(
-        'dashboard/',
-        DashboardPageView.as_view(),
-        name='dashboard',
-    ),
     path(
         'dashboard/summary/',
         DashboardSummaryView.as_view(),

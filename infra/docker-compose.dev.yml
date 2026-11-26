@@ -1,0 +1,52 @@
+# Tout-en-un LOCAL pour développer/démontrer S4 sur UNE machine (≠ déploiement multi-serveurs).
+#   docker compose -f docker-compose.dev.yml up --build --scale api=2
+name: unitrack-dev
+x-s4-env: &s4env
+  DJANGO_DEBUG: "true"
+  DB_HOST: db
+  DB_NAME: attendance_db
+  DB_USER: attendance
+  DB_PASSWORD: attendance
+  JWT_SECRET: dev-shared-secret-change-me
+  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2F
+  CONSUL_HOST: consul
+  CONSUL_ENABLED: "true"
+  CORS_ALLOW_ALL: "true"
+services:
+  db:
+    image: postgres:16-alpine
+    environment: {POSTGRES_DB: attendance_db, POSTGRES_USER: attendance, POSTGRES_PASSWORD: attendance}
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U attendance -d attendance_db"], interval: 5s, retries: 10}
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck: {test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"], interval: 10s, retries: 10}
+  consul:
+    image: hashicorp/consul:1.19
+    command: agent -dev -ui -client=0.0.0.0
+    ports: ["8500:8500"]
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --providers.consulcatalog=true
+      - --providers.consulcatalog.exposedByDefault=false
+      - --providers.consulcatalog.refreshInterval=3s
+      - --providers.consulcatalog.endpoint.address=consul:8500
+    ports: ["80:80", "8080:8080"]
+    depends_on: [consul]
+  api:                         # --scale api=2 → 2 instances, Traefik répartit la charge
+    build: ../services/attendance-service
+    environment: {<<: *s4env, RUN_MIGRATIONS: "1"}
+    depends_on: {db: {condition: service_healthy}, consul: {condition: service_started}}
+  consumer:
+    build: ../services/attendance-service
+    command: python manage.py consume_events
+    environment: *s4env
+    depends_on: {api: {condition: service_started}, rabbitmq: {condition: service_healthy}}
+  scheduler:
+    build: ../services/attendance-service
+    command: python manage.py run_scheduler
+    environment: *s4env
+    depends_on: {api: {condition: service_started}, rabbitmq: {condition: service_healthy}}

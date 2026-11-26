@@ -1,0 +1,19 @@
+# Traefik : routage dynamique via Consul (les services s'annoncent avec leurs tags)
+api:
+  dashboard: true
+  insecure: true        # dashboard sur :8080 (démo uniquement)
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  consulCatalog:
+    exposedByDefault: false      # seuls les services avec le tag traefik.enable=true
+    refreshInterval: 5s
+    endpoint:
+      address: "consul:8500"
+
+log:
+  level: INFO
+accessLog: {}

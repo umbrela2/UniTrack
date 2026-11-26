@@ -1,0 +1,13 @@
+http:
+  routers:
+    academic-router:
+      rule: "PathPrefix(`/api/academic`)"
+      service: academic-service
+      entryPoints:
+        - web
+
+  services:
+    academic-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8003"

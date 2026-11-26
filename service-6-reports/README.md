@@ -1,21 +1,23 @@
 # Service 6 — Statistiques & Rapports (UniTrack)
 
 Microservice Django 5 / Django REST Framework du projet **UniTrack** pour
-l'Université M'hamed Bougara – Boumerdès. Il expose les statistiques
-d'assiduité, les rapports exportables, l'interface de tableau de bord et un
-endpoint de synchronisation avec les autres services.
+l'Université M'hamed Bougara – Boumerdès. Service **headless** (sans interface
+HTML) : il expose uniquement une API REST JSON pour les statistiques
+d'assiduité, les rapports exportables (Excel/PDF) et un endpoint de
+synchronisation avec les autres services. Le frontend React est développé et
+hébergé séparément.
 
 | Élément | Valeur |
 | --- | --- |
 | Service | `s6-reports` |
 | Port HTTP | `8006` |
-| Base de données (Docker) | `reports_db` (PostgreSQL 16) |
+| Base de données (Docker) | `statistics_db` (PostgreSQL 16) |
 | Base locale par défaut | SQLite (`db.sqlite3`) |
 | Documentation OpenAPI | `/api/docs/` |
 
 ## Fonctionnalités
 
-- Tableau de bord interactif (Bootstrap 5 + Chart.js) avec filtres et exports.
+- API REST JSON consommable par le frontend React (CORS ouvert).
 - KPI d'assiduité, répartition des présences, taux par module et par groupe.
 - Détection des étudiants en alerte / exclusion selon des seuils paramétrables.
 - Liste des séances non assurées.
@@ -23,12 +25,19 @@ endpoint de synchronisation avec les autres services.
 - Exports Excel (openpyxl) et PDF (ReportLab) filtrés.
 - Synchronisation idempotente des groupes, modules, salles, enseignants,
   étudiants, séances et présences.
+- Enregistrement automatique dans Consul (`s6-reports`, port `8006`).
+- Consommation asynchrone RabbitMQ des événements `session.*` et
+  `attendance.*`.
+- Authentification JWT compatible avec le service S1 Auth.
+- Routage Traefik sur `/api/reports` via des labels Docker.
 
 ## Prérequis
 
 - Python 3.11 ou supérieur (3.12 recommandé en local).
 - Docker Desktop et Docker Compose v2 pour le déploiement conteneurisé.
 - PostgreSQL 16 uniquement si vous n'utilisez pas Docker pour la base.
+- Consul et RabbitMQ sont facultatifs en local : le service démarre même
+  s'ils sont indisponibles.
 
 ## Installation locale sous Windows
 
@@ -55,18 +64,18 @@ directement l'interpréteur :
 
 Accès :
 
-- Tableau de bord : <http://127.0.0.1:8006/api/reports/dashboard/>
 - Santé du service : <http://127.0.0.1:8006/api/reports/health/>
 - Documentation API : <http://127.0.0.1:8006/api/docs/>
 - Schéma OpenAPI : <http://127.0.0.1:8006/api/schema/>
 - Administration Django : <http://127.0.0.1:8006/admin/>
 
-Pour utiliser PostgreSQL en local, créez une base `reports_db`, puis dans
+Pour utiliser PostgreSQL en local, créez une base `statistics_db`, puis dans
 `.env` :
 
 ```dotenv
+USE_SQLITE=False
 USE_POSTGRES=True
-DB_NAME=reports_db
+DB_NAME=statistics_db
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_HOST=localhost
@@ -79,16 +88,21 @@ Puis relancez `python manage.py migrate`.
 
 Le fichier `docker-compose.yml` démarre deux services :
 
-- `reports_db` : PostgreSQL 16, volume persistant `reports_db_data` ;
+- `statistics_db` : PostgreSQL 16, volume persistant `statistics_db_data` ;
 - `s6-reports` : image construite depuis `Dockerfile` (Python 3.11-slim,
-  Gunicorn), exposée sur le port `8006`, migrations appliquées au démarrage.
+  Gunicorn), exposée sur le port `8006`, migrations appliquées au démarrage,
+  connectée au réseau externe `unitrack_net` et routée par Traefik sur
+  `/api/reports`.
+
+Le réseau externe doit exister avant le démarrage :
 
 ```powershell
+docker network create unitrack_net
 docker compose up --build -d
 docker compose exec s6-reports python manage.py seed_mock_data
 ```
 
-Accès : <http://localhost:8006/api/reports/dashboard/>
+Accès : <http://localhost:8006/api/reports/health/>
 
 Commandes utiles :
 
@@ -102,10 +116,11 @@ docker compose down -v   # supprime aussi le volume PostgreSQL
 Variables d'environnement surchargeables (PowerShell) :
 
 ```powershell
-$env:POSTGRES_DB = "reports_db"
+$env:POSTGRES_DB = "statistics_db"
 $env:POSTGRES_USER = "postgres"
 $env:POSTGRES_PASSWORD = "postgres"
 $env:SECRET_KEY = "une-cle-secrete"
+$env:JWT_SIGNING_KEY = "cle-partagee-avec-s1-auth"
 docker compose up --build -d
 ```
 
@@ -118,12 +133,18 @@ Le fichier `.env` est chargé automatiquement par `config/settings.py`.
 | `SECRET_KEY` | clé de développement | Clé secrète Django |
 | `DEBUG` | `True` | Mode debug |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hôtes autorisés, séparés par des virgules |
+| `USE_SQLITE` | `False` (`True` dans `.env.example`) | Force SQLite local même si PostgreSQL est activé |
 | `USE_POSTGRES` | `False` | Active PostgreSQL au lieu de SQLite |
-| `DB_NAME` | `reports_db` | Nom de la base |
+| `DB_NAME` | `statistics_db` | Nom de la base |
 | `DB_USER` | `postgres` | Utilisateur PostgreSQL |
 | `DB_PASSWORD` | `postgres` | Mot de passe PostgreSQL |
-| `DB_HOST` | `localhost` | Hôte PostgreSQL (`reports_db` sous Docker) |
+| `DB_HOST` | `localhost` | Hôte PostgreSQL (`statistics_db` sous Docker) |
 | `DB_PORT` | `5432` | Port PostgreSQL |
+| `CONSUL_HOST` | `localhost` | Hôte de l'agent Consul |
+| `CONSUL_PORT` | `8500` | Port HTTP de Consul |
+| `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | URL AMQP du broker |
+| `JWT_SIGNING_KEY` | `SECRET_KEY` | Clé de signature partagée avec S1 Auth |
+| `REQUIRE_AUTH` | `False` | Exige un JWT sur les endpoints API |
 
 Fuseau horaire : `Africa/Algiers`. Langue : `fr-fr`.
 
@@ -131,14 +152,55 @@ Les seuils d'alerte et d'exclusion sont stockés dans le modèle
 `ParametresSeuils` (valeurs par défaut : alerte ≥ 3 absences non justifiées,
 exclusion ≥ 5) et modifiables depuis l'administration Django.
 
+### Consul
+
+Au démarrage (hors commandes `migrate` et `test`), le service s'enregistre
+auprès de Consul sous l'identifiant `s6-reports-8006` avec le nom
+`s6-reports`, le port `8006`, les tags `traefik.enable=true`, `reports` et
+`statistics`. Le contrôle de santé Consul appelle
+`http://s6-reports:8006/api/reports/health/`. Si Consul est indisponible,
+l'échec est journalisé en avertissement et Django continue de démarrer.
+
+### RabbitMQ
+
+Le consommateur asynchrone écoute l'exchange topic `unitrack.events` via la
+file durable `s6_statistics_queue`, liée aux routings keys `session.*` et
+`attendance.*`. Chaque message JSON est traité par la même logique
+transactionnelle que `POST /api/reports/sync/` :
+
+```powershell
+python manage.py consume_events
+```
+
+L'URL du broker est lue depuis `RABBITMQ_URL`. Les messages invalides sont
+rejetés sans être remis en file ; les erreurs sont journalisées.
+
+### Authentification JWT
+
+`JWTAuthentication` (djangorestframework-simplejwt) est activé avec la clé
+`JWT_SIGNING_KEY`, qui doit être identique à celle du service S1 Auth. Par
+défaut, `REQUIRE_AUTH=False` laisse les endpoints ouverts pour le
+développement local et Swagger. L'endpoint `/health/` reste toujours public
+pour les sondes Consul et Traefik.
+
+### Traefik
+
+Les labels du conteneur `s6-reports` activent Traefik et routent le préfixe
+`/api/reports` vers le port `8006` du service sur le réseau externe
+`unitrack_net`.
+
 ## API REST
 
-Toutes les routes sont préfixées par `/api/reports/`.
+Service purement headless : toutes les réponses métier sont en JSON (ou
+Excel/PDF pour les exports), sans aucun rendu HTML. Toutes les routes sont
+préfixées par `/api/reports/`.
+
+`CORS_ALLOW_ALL_ORIGINS = True` est activé dans `config/settings.py` afin que
+le frontend React séparé puisse appeler l'API sans blocage CORS.
 
 | Méthode | Chemin | Description |
 | --- | --- | --- |
 | `GET` | `/health/` | État du service (`service`, `status`, `port`) |
-| `GET` | `/dashboard/` | Interface HTML du tableau de bord |
 | `GET` | `/dashboard/summary/` | KPI, statistiques par module/groupe, étudiants à risque, répartition des présences |
 | `GET` | `/non-assured-sessions/` | Liste des séances au statut « Non assurée » |
 | `GET` | `/student/<matricule>/` | Statistiques d'assiduité d'un étudiant |
@@ -250,9 +312,9 @@ La commande est idempotente et crée 5 groupes, 8 modules, 6 salles,
 python manage.py test
 ```
 
-Les tests couvrent les endpoints santé, tableau de bord, filtres et rôles,
-seuils, séances non assurées, statistiques étudiant, synchronisation et
-exports Excel/PDF.
+Les tests couvrent les endpoints santé, les agrégations du tableau de bord
+(API JSON), les filtres et rôles, les seuils, les séances non assurées, les
+statistiques étudiant, la synchronisation et les exports Excel/PDF.
 
 ## Structure
 
@@ -260,12 +322,16 @@ exports Excel/PDF.
 service-6-reports/
 ├── config/                 # Settings, URLs et WSGI Django
 ├── reports/
-│   ├── management/commands/seed_mock_data.py
+│   ├── management/commands/
+│   │   ├── consume_events.py
+│   │   └── seed_mock_data.py
 │   ├── migrations/
-│   ├── templates/reports/dashboard.html
 │   ├── admin.py
+│   ├── apps.py             # Enregistrement Consul au démarrage
+│   ├── consul_client.py    # Client d'enregistrement Consul
 │   ├── exporters.py        # Génération Excel et PDF
 │   ├── models.py
+│   ├── rabbitmq_consumer.py
 │   ├── sync.py             # Logique de synchronisation
 │   ├── tests.py
 │   ├── urls.py
