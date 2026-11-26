@@ -3,7 +3,6 @@ from django.urls import path
 from .views import (
     DashboardSummaryView,
     ExcelExportView,
-    HealthView,
     NonAssuredSessionsView,
     PdfExportView,
     StudentStatsView,
@@ -11,7 +10,6 @@ from .views import (
 )
 
 urlpatterns = [
-    path('health/', HealthView.as_view(), name='health'),
     path(
         'dashboard/summary/',
         DashboardSummaryView.as_view(),

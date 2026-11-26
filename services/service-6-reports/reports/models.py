@@ -167,3 +167,16 @@ class ParametresSeuils(models.Model):
 
     def __str__(self):
         return f"Alerte : {self.seuil_alerte} - Exclusion : {self.seuil_exclusion}"
+
+
+class ProcessedEvent(models.Model):
+    event_id = models.CharField(max_length=255, unique=True)
+    processed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-processed_at']
+        verbose_name = 'Événement traité'
+        verbose_name_plural = 'Événements traités'
+
+    def __str__(self):
+        return self.event_id

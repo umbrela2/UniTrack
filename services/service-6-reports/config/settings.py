@@ -22,7 +22,10 @@ USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() in ('true', '1', 'yes')
 
 REQUIRE_AUTH = os.getenv('REQUIRE_AUTH', 'False').lower() in ('true', '1', 'yes')
 
-JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY', SECRET_KEY)
+JWT_SIGNING_KEY = os.getenv(
+    'JWT_SECRET',
+    os.getenv('JWT_SIGNING_KEY', SECRET_KEY),
+)
 
 ALLOWED_HOSTS = [
     host.strip()

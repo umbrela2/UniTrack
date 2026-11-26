@@ -8,8 +8,12 @@ logger = logging.getLogger(__name__)
 SERVICE_NAME = 's6-reports'
 SERVICE_ID = 's6-reports-8006'
 SERVICE_PORT = 8006
-SERVICE_TAGS = ['traefik.enable=true', 'reports', 'statistics']
-HEALTH_CHECK_URL = 'http://s6-reports:8006/api/reports/health/'
+SERVICE_TAGS = [
+    'traefik.enable=true',
+    'traefik.http.routers.s6-reports.rule=PathPrefix(`/api/statistics`)',
+    'statistics',
+]
+HEALTH_CHECK_URL = 'http://s6-reports:8006/health/'
 
 
 def _consul_base_url():
